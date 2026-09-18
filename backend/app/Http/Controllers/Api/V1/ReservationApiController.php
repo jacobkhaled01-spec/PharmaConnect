@@ -114,4 +114,27 @@ class ReservationApiController extends Controller
             ], 422);
         }
     }
+
+    /**
+     * استعلام تفصيلي عن حالة حجز معين برقم الحجز أو المعرف
+     */
+    public function show(string $codeOrId): JsonResponse
+    {
+        $reservation = \App\Models\Reservation::with(['pharmacy', 'items.medicine'])
+            ->where('reservation_code', $codeOrId)
+            ->orWhere('id', is_numeric($codeOrId) ? (int) $codeOrId : 0)
+            ->first();
+
+        if (! $reservation) {
+            return response()->json([
+                'success' => false,
+                'message' => 'الحجز غير موجود.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => new ReservationResource($reservation),
+        ]);
+    }
 }

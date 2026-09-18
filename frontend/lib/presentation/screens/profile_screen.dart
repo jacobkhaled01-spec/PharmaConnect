@@ -756,6 +756,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: Text(
         title,
         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
         subtitle,
@@ -763,6 +764,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
           fontSize: 12,
         ),
+        overflow: TextOverflow.ellipsis,
       ),
       trailing: trailing,
     );

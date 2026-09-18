@@ -127,6 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: _buildAppDrawer(context),
       appBar: AppBar(
         title: Row(
           mainAxisSize: MainAxisSize.min,
@@ -203,6 +204,265 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             label: 'حسابي',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppDrawer(BuildContext context) {
+    final user = ApiService().currentUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreen;
+    final inactiveColor = isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted;
+
+    return Drawer(
+      backgroundColor: isDark ? PharmaTheme.darkBackground : Colors.white,
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          // ترويسة القائمة الجانبية بهوية العميل
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 50, 20, 24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [const Color(0xFF065F46), const Color(0xFF0F172A)]
+                    : [PharmaTheme.primaryGreen, PharmaTheme.primaryGreenDark],
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 32,
+                  backgroundColor: Colors.white.withAlpha(220),
+                  child: Text(
+                    user != null && user.name.isNotEmpty
+                        ? user.name.substring(0, 1).toUpperCase()
+                        : 'ف',
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: PharmaTheme.primaryGreenDark,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  user?.name ?? 'زائر PharmaConnect',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  user?.email ?? 'وضع التصفح والبحث المباشر',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(40),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withAlpha(60)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        user != null ? Icons.verified_rounded : Icons.explore_rounded,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        user != null ? 'عميل موثّق ومعتمد' : 'تصفح واستعلام كزائر',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // عناصر القائمة الجانبية
+          const SizedBox(height: 8),
+          ListTile(
+            leading: Icon(Icons.search_rounded, color: _currentTabIndex == 0 ? activeColor : inactiveColor),
+            title: const Text('البحث عن الأدوية', style: TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: const Text('الاستعلام اللحظي والوفرة في الصيدليات', style: TextStyle(fontSize: 12)),
+            selected: _currentTabIndex == 0,
+            selectedTileColor: activeColor.withAlpha(20),
+            onTap: () {
+              Navigator.pop(context);
+              setState(() => _currentTabIndex = 0);
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.receipt_long_rounded, color: _currentTabIndex == 1 ? activeColor : inactiveColor),
+            title: const Text('طلباتي وحجوزاتي', style: TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: const Text('متابعة الأدوية وتذاكر الحجز والـ QR', style: TextStyle(fontSize: 12)),
+            selected: _currentTabIndex == 1,
+            selectedTileColor: activeColor.withAlpha(20),
+            onTap: () {
+              Navigator.pop(context);
+              setState(() => _currentTabIndex = 1);
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.person_outline_rounded, color: _currentTabIndex == 2 ? activeColor : inactiveColor),
+            title: const Text('الملف الشخصي والإعدادات', style: TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: const Text('تعديل البيانات الشخصية، والمدينة', style: TextStyle(fontSize: 12)),
+            selected: _currentTabIndex == 2,
+            selectedTileColor: activeColor.withAlpha(20),
+            onTap: () {
+              Navigator.pop(context);
+              setState(() => _currentTabIndex = 2);
+            },
+          ),
+          const Divider(indent: 16, endIndent: 16),
+
+          // مفتاح التبديل للمظهر الليلي والنهاري
+          SwitchListTile(
+            secondary: Icon(
+              ThemeController().isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+              color: ThemeController().isDarkMode ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark,
+            ),
+            title: const Text('المظهر الليلي (Dark Mode)', style: TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text(
+              ThemeController().isDarkMode ? 'مفعل (الثيم الطبي الداكن)' : 'معطل (الثيم النهاري الطبي)',
+              style: const TextStyle(fontSize: 12),
+            ),
+            value: ThemeController().isDarkMode,
+            onChanged: (val) {
+              setState(() {
+                ThemeController().toggleTheme();
+              });
+            },
+          ),
+
+          ListTile(
+            leading: Icon(Icons.timer_outlined, color: inactiveColor),
+            title: const Text('صلاحية الحجز (TTL 30 دقيقة)', style: TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: const Text('كيفية عمل مهلة الاستلام وقفل التزامن', style: TextStyle(fontSize: 12)),
+            onTap: () {
+              Navigator.pop(context);
+              _showTtlInfoDialog(context);
+            },
+          ),
+
+          ListTile(
+            leading: Icon(Icons.support_agent_rounded, color: inactiveColor),
+            title: const Text('الدعم الفني والربط البرمجي', style: TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: const Text('مساعدة الصيدليات والعملاء (B2B / Help)', style: TextStyle(fontSize: 12)),
+            onTap: () {
+              Navigator.pop(context);
+              _showSupportDialog(context);
+            },
+          ),
+
+          const Divider(indent: 16, endIndent: 16),
+
+          // خيار تسجيل الدخول أو الخروج
+          if (user != null)
+            ListTile(
+              leading: const Icon(Icons.logout_rounded, color: PharmaTheme.statusDanger),
+              title: const Text(
+                'تسجيل الخروج',
+                style: TextStyle(color: PharmaTheme.statusDanger, fontWeight: FontWeight.bold),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await ApiService().logout();
+                if (context.mounted) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AuthScreen()),
+                  );
+                }
+              },
+            )
+          else
+            ListTile(
+              leading: const Icon(Icons.login_rounded, color: PharmaTheme.primaryGreen),
+              title: const Text(
+                'تسجيل الدخول / إنشاء حساب',
+                style: TextStyle(color: PharmaTheme.primaryGreen, fontWeight: FontWeight.bold),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AuthScreen()),
+                );
+              },
+            ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  void _showTtlInfoDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.timer_outlined, color: PharmaTheme.primaryGreen),
+            SizedBox(width: 8),
+            Text('مهلة الحجز (TTL)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'تمنحك الصيدلية مهلة افتراضية قدرها 30 دقيقة عند حجز أي دواء.\n\nخلال هذه الفترة، يتم تطبيق قفل تشاؤمي لمنع حجز الكمية لمستخدم آخر، وفي حال عدم الاستلام خلال المهلة يتم فك الحجز تلقائياً وإعادة الصنف للمخزون العام.',
+          style: TextStyle(height: 1.6),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('حسناً، فهمت ذلك'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSupportDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.support_agent_rounded, color: PharmaTheme.primaryGreen),
+            SizedBox(width: 8),
+            Text('مركز المساعدة والدعم', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'نظام فارما-كونكت (PharmaConnect) يربط الصيدليات بالمستخدمين لحظياً.\n\n• للشكاوى والاستفسارات: support@pharmaconnect.ye\n• لربط أنظمة الصيدليات المحاسبية (B2B Integration): api@pharmaconnect.ye\n• الهاتف المباشر: +967 1 400000',
+          style: TextStyle(height: 1.6),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إغلاق'),
           ),
         ],
       ),

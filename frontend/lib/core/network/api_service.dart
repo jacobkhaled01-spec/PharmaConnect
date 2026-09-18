@@ -238,9 +238,12 @@ class ApiService {
         final List data = body['data'] ?? [];
         final items = data.map((item) => ReservationModel.fromJson(item)).toList();
         
-        // مزامنة الكاش المحلي
+        // مزامنة وتحديث الكاش المحلي
         for (final item in items) {
-          if (!_cachedReservations.any((r) => r.id == item.id)) {
+          final index = _cachedReservations.indexWhere((r) => r.id == item.id || r.reservationCode == item.reservationCode);
+          if (index != -1) {
+            _cachedReservations[index] = item;
+          } else {
             _cachedReservations.insert(0, item);
           }
         }
@@ -251,6 +254,36 @@ class ApiService {
     }
 
     return _cachedReservations;
+  }
+
+  /// جلب تفاصيل حجز محدد بالرمز أو المعرف وتحديث حالته فورياً
+  Future<ReservationModel?> getReservationDetails(String codeOrId) async {
+    try {
+      final uri = Uri.parse('${AppConstants.baseUrl}${AppConstants.reservationsEndpoint}/$codeOrId');
+      final response = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
+
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['data'] != null) {
+          final updated = ReservationModel.fromJson(body['data']);
+          final index = _cachedReservations.indexWhere((r) => r.id == updated.id || r.reservationCode == updated.reservationCode);
+          if (index != -1) {
+            _cachedReservations[index] = updated;
+          } else {
+            _cachedReservations.insert(0, updated);
+          }
+          return updated;
+        }
+      }
+    } catch (_) {
+      // Return cached if exists
+    }
+
+    final cachedIndex = _cachedReservations.indexWhere((r) => r.reservationCode == codeOrId || r.id.toString() == codeOrId);
+    if (cachedIndex != -1) {
+      return _cachedReservations[cachedIndex];
+    }
+    return null;
   }
 
   /// إرسال طلب حجز مؤقت

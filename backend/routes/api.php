@@ -21,9 +21,9 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/login', [AuthController::class, 'login']);
 
-    // 3. مسارات الحجوزات (تدعم المستخدم المسجل والمريض المباشر)
     Route::post('/reservations', [ReservationApiController::class, 'store']);
     Route::get('/reservations/my', [ReservationApiController::class, 'myReservations']);
+    Route::get('/reservations/{code}', [ReservationApiController::class, 'show']);
     Route::post('/reservations/{id}/cancel', [ReservationApiController::class, 'cancel']);
 
     // 4. واجهات الربط البرمجي لأنظمة الصيدليات المحاسبية ونقاط البيع (Partner B2B Integration API)
