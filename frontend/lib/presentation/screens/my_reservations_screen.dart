@@ -66,13 +66,18 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                           const SizedBox(height: 16),
                           const Text(
                             'لا توجد لديك طلبات حجز حالياً',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: PharmaTheme.textMain),
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8),
-                          const Text(
+                          Text(
                             'عند حجز أي دواء من الصيدليات المتاحة سيظهر طلبك هنا مباشرة لمتابعة الاستلام والمهلة الزمنية.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: PharmaTheme.textMuted, fontSize: 13),
+                            style: TextStyle(
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? const Color(0xFF94A3B8)
+                                  : PharmaTheme.textMuted,
+                              fontSize: 13,
+                            ),
                           ),
                         ],
                       ),
@@ -92,9 +97,15 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
 
   Widget _buildReservationCard(ReservationModel item) {
     final isPending = item.status == 'pending' && !item.isExpired;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
+      color: isDark ? PharmaTheme.darkSurface : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: isDark ? PharmaTheme.darkBorder : const Color(0xFFE2E8F0)),
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
@@ -119,12 +130,16 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: isPending ? PharmaTheme.mintAccent : const Color(0xFFF1F5F9),
+                            color: isPending
+                                ? (isDark ? const Color(0xFF064E3B) : PharmaTheme.mintAccent)
+                                : (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9)),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
                             isPending ? Icons.timer_outlined : Icons.check_circle_outline,
-                            color: isPending ? PharmaTheme.primaryGreenDark : PharmaTheme.textMuted,
+                            color: isPending
+                                ? (isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenDark)
+                                : (isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted),
                             size: 20,
                           ),
                         ),
@@ -139,7 +154,10 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                               ),
                               Text(
                                 item.pharmacy.name,
-                                style: const TextStyle(color: PharmaTheme.textMuted, fontSize: 13),
+                                style: TextStyle(
+                                  color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+                                  fontSize: 13,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ],
@@ -151,13 +169,13 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _getStatusBgColor(item.status),
+                      color: _getStatusBgColor(item.status, isDark),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       _getStatusLabel(item.status),
                       style: TextStyle(
-                        color: _getStatusTextColor(item.status),
+                        color: _getStatusTextColor(item.status, isDark),
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -165,7 +183,7 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                   ),
                 ],
               ),
-              const Divider(height: 20),
+              Divider(height: 20, color: isDark ? PharmaTheme.darkBorder : const Color(0xFFE2E8F0)),
               ...item.items.map(
                 (med) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2.0),
@@ -187,7 +205,7 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                   ),
                 ),
               ),
-              const Divider(height: 20),
+              Divider(height: 20, color: isDark ? PharmaTheme.darkBorder : const Color(0xFFE2E8F0)),
               Wrap(
                 alignment: WrapAlignment.spaceBetween,
                 crossAxisAlignment: WrapCrossAlignment.center,
@@ -197,10 +215,20 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('الإجمالي: ', style: TextStyle(color: PharmaTheme.textMuted, fontSize: 12)),
+                      Text(
+                        'الإجمالي: ',
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+                          fontSize: 12,
+                        ),
+                      ),
                       Text(
                         '${item.totalAmount.toStringAsFixed(0)} ريال',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: PharmaTheme.primaryGreen, fontSize: 15),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreen,
+                          fontSize: 15,
+                        ),
                       ),
                     ],
                   ),
@@ -228,31 +256,31 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
     );
   }
 
-  Color _getStatusBgColor(String status) {
+  Color _getStatusBgColor(String status, bool isDark) {
     switch (status) {
       case 'pending':
-        return PharmaTheme.mintAccent;
+        return isDark ? const Color(0xFF064E3B) : PharmaTheme.mintAccent;
       case 'completed':
-        return const Color(0xFFDCFCE7);
+        return isDark ? const Color(0xFF064E3B).withAlpha(120) : const Color(0xFFDCFCE7);
       case 'expired':
       case 'cancelled':
-        return const Color(0xFFFEE2E2);
+        return isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2);
       default:
-        return const Color(0xFFF1F5F9);
+        return isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9);
     }
   }
 
-  Color _getStatusTextColor(String status) {
+  Color _getStatusTextColor(String status, bool isDark) {
     switch (status) {
       case 'pending':
-        return PharmaTheme.primaryGreenDark;
+        return isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenDark;
       case 'completed':
-        return const Color(0xFF15803D);
+        return isDark ? const Color(0xFF34D399) : const Color(0xFF15803D);
       case 'expired':
       case 'cancelled':
-        return PharmaTheme.statusDanger;
+        return isDark ? const Color(0xFFF87171) : PharmaTheme.statusDanger;
       default:
-        return PharmaTheme.textMuted;
+        return isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted;
     }
   }
 

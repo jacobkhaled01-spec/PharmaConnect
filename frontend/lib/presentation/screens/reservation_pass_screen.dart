@@ -51,6 +51,9 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
   @override
   Widget build(BuildContext context) {
     final isExpired = _remainingSeconds <= 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? PharmaTheme.darkSurface : Colors.white;
+    final borderColor = isDark ? PharmaTheme.darkBorder : const Color(0xFFE2E8F0);
 
     return Scaffold(
       appBar: AppBar(
@@ -64,12 +67,12 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: borderColor),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(8),
+                    color: Colors.black.withAlpha(isDark ? 30 : 8),
                     blurRadius: 15,
                     offset: const Offset(0, 5),
                   ),
@@ -81,13 +84,17 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: isExpired ? const Color(0xFFFEE2E2) : PharmaTheme.mintBackground,
+                      color: isExpired
+                          ? (isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2))
+                          : (isDark ? const Color(0xFF064E3B) : PharmaTheme.mintBackground),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Icon(
                       isExpired ? Icons.timer_off : Icons.qr_code_2,
                       size: 70,
-                      color: isExpired ? PharmaTheme.statusDanger : PharmaTheme.primaryGreen,
+                      color: isExpired
+                          ? (isDark ? const Color(0xFFF87171) : PharmaTheme.statusDanger)
+                          : (isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreen),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -97,15 +104,17 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
                       fontSize: 26,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 2,
-                      color: PharmaTheme.textMain,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     'أظهر هذا الرمز للصيدلي عند الاستلام',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+                      fontSize: 13,
+                    ),
                   ),
-                  const Divider(height: 36),
+                  Divider(height: 36, color: borderColor),
 
                   // مؤقت العد التنازلي الحي
                   Text(
@@ -116,7 +125,9 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isExpired ? const Color(0xFFFEE2E2) : PharmaTheme.mintAccent,
+                      color: isExpired
+                          ? (isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2))
+                          : (isDark ? const Color(0xFF064E3B).withAlpha(150) : PharmaTheme.mintAccent),
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Text(
@@ -124,11 +135,13 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
-                        color: isExpired ? PharmaTheme.statusDanger : PharmaTheme.primaryGreenDark,
+                        color: isExpired
+                            ? (isDark ? const Color(0xFFF87171) : PharmaTheme.statusDanger)
+                            : (isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenDark),
                       ),
                     ),
                   ),
-                  const Divider(height: 36),
+                  Divider(height: 36, color: borderColor),
 
                   // تفاصيل الصيدلية
                   Row(
@@ -146,17 +159,24 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, color: PharmaTheme.textMuted, size: 18),
+                      Icon(
+                        Icons.location_on,
+                        color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           widget.reservation.pharmacy.address,
-                          style: const TextStyle(color: PharmaTheme.textMuted, fontSize: 13),
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const Divider(height: 36),
+                  Divider(height: 36, color: borderColor),
 
                   // تفاصيل الأصناف
                   ...widget.reservation.items.map(

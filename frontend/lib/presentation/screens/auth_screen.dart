@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/network/api_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/theme_controller.dart';
 import '../../main.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -94,154 +95,191 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 460),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // شعار المنصة الطبية
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: PharmaTheme.mintAccent,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: PharmaTheme.primaryGreen.withAlpha(40),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.local_pharmacy_rounded,
-                      size: 52,
-                      color: PharmaTheme.primaryGreenDark,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    AppConstants.appName,
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                      color: PharmaTheme.primaryGreenDark,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'المنصة الذكية لتتبع وفرة الأدوية وإدارة الحجوزات',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: PharmaTheme.textMuted, fontSize: 13),
-                  ),
-                  const SizedBox(height: 28),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? PharmaTheme.darkSurface : Colors.white;
+    final borderColor = isDark ? PharmaTheme.darkBorder : const Color(0xFFE2E8F0);
+    final tabBg = isDark ? PharmaTheme.darkSurfaceElevated : const Color(0xFFF1F5F9);
 
-                  // بطاقة تسجيل الدخول أو إنشاء الحساب
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(8),
-                          blurRadius: 20,
-                          offset: const Offset(0, 6),
+    return Scaffold(
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // زر تبديل الثيم في الزاوية العلوية
+            Positioned(
+              top: 12,
+              left: 16,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: borderColor),
+                ),
+                child: IconButton(
+                  tooltip: isDark ? 'التحويل إلى الوضع النهاري' : 'التحويل إلى الوضع الليلي',
+                  icon: Icon(
+                    isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                    color: isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenDark,
+                  ),
+                  onPressed: () {
+                    ThemeController().toggleTheme();
+                    setState(() {});
+                  },
+                ),
+              ),
+            ),
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 20),
+                      // شعار المنصة الطبية
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF064E3B) : PharmaTheme.mintAccent,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: PharmaTheme.primaryGreen.withAlpha(isDark ? 30 : 40),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // أزرار التبديل العلوية (Tab Switcher)
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _isRegistering = false;
-                                      _errorMessage = null;
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: !_isRegistering ? Colors.white : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(10),
-                                      boxShadow: !_isRegistering
-                                          ? [
-                                              BoxShadow(
-                                                color: Colors.black.withAlpha(10),
-                                                blurRadius: 4,
-                                              )
-                                            ]
-                                          : null,
-                                    ),
-                                    child: Text(
-                                      'تسجيل الدخول',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: !_isRegistering ? PharmaTheme.primaryGreenDark : PharmaTheme.textMuted,
+                        child: Icon(
+                          Icons.local_pharmacy_rounded,
+                          size: 52,
+                          color: isDark ? const Color(0xFF6EE7B7) : PharmaTheme.primaryGreenDark,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        AppConstants.appName,
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5,
+                          color: isDark ? const Color(0xFF6EE7B7) : PharmaTheme.primaryGreenDark,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'المنصة الذكية لتتبع وفرة الأدوية وإدارة الحجوزات',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+
+                      // بطاقة تسجيل الدخول أو إنشاء الحساب
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: cardBg,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: borderColor),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(isDark ? 35 : 8),
+                              blurRadius: 20,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // أزرار التبديل العلوية (Tab Switcher)
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: tabBg,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _isRegistering = false;
+                                          _errorMessage = null;
+                                        });
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 10),
+                                        decoration: BoxDecoration(
+                                          color: !_isRegistering ? cardBg : Colors.transparent,
+                                          borderRadius: BorderRadius.circular(10),
+                                          boxShadow: !_isRegistering
+                                              ? [
+                                                  BoxShadow(
+                                                    color: Colors.black.withAlpha(isDark ? 30 : 10),
+                                                    blurRadius: 4,
+                                                  )
+                                                ]
+                                              : null,
+                                        ),
+                                        child: Text(
+                                          'تسجيل الدخول',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: !_isRegistering
+                                                ? (isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenDark)
+                                                : (isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted),
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _isRegistering = true;
-                                      _errorMessage = null;
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: _isRegistering ? Colors.white : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(10),
-                                      boxShadow: _isRegistering
-                                          ? [
-                                              BoxShadow(
-                                                color: Colors.black.withAlpha(10),
-                                                blurRadius: 4,
-                                              )
-                                            ]
-                                          : null,
-                                    ),
-                                    child: Text(
-                                      'إنشاء حساب جديد',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: _isRegistering ? PharmaTheme.primaryGreenDark : PharmaTheme.textMuted,
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _isRegistering = true;
+                                          _errorMessage = null;
+                                        });
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 10),
+                                        decoration: BoxDecoration(
+                                          color: _isRegistering ? cardBg : Colors.transparent,
+                                          borderRadius: BorderRadius.circular(10),
+                                          boxShadow: _isRegistering
+                                              ? [
+                                                  BoxShadow(
+                                                    color: Colors.black.withAlpha(isDark ? 30 : 10),
+                                                    blurRadius: 4,
+                                                  )
+                                                ]
+                                              : null,
+                                        ),
+                                        child: Text(
+                                          'إنشاء حساب جديد',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: _isRegistering
+                                                ? (isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenDark)
+                                                : (isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted),
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
+                            ),
+                            const SizedBox(height: 24),
 
                         if (_errorMessage != null) ...[
                           Container(
@@ -340,18 +378,25 @@ class _AuthScreenState extends State<AuthScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF8FAFC),
+                                color: isDark ? PharmaTheme.darkSurfaceElevated : const Color(0xFFF8FAFC),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                                border: Border.all(color: borderColor),
                               ),
-                              child: const Row(
+                              child: Row(
                                 children: [
-                                  Icon(Icons.touch_app_outlined, size: 15, color: PharmaTheme.primaryGreen),
-                                  SizedBox(width: 6),
+                                  Icon(
+                                    Icons.touch_app_outlined,
+                                    size: 15,
+                                    color: isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreen,
+                                  ),
+                                  const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
                                       'تجربة سريعة: patient@pharmaconnect.ye (اضغط للتعبئة)',
-                                      style: TextStyle(color: PharmaTheme.textMuted, fontSize: 11),
+                                      style: TextStyle(
+                                        color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+                                        fontSize: 11,
+                                      ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -368,10 +413,18 @@ class _AuthScreenState extends State<AuthScreen> {
                   // زر الدخول كزائر / استعلام مباشر
                   TextButton.icon(
                     onPressed: _continueAsGuest,
-                    icon: const Icon(Icons.arrow_back, size: 16, color: PharmaTheme.textMuted),
-                    label: const Text(
+                    icon: Icon(
+                      Icons.arrow_back,
+                      size: 16,
+                      color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+                    ),
+                    label: Text(
                       'المتابعة كزائر والبحث عن الأدوية مباشرة',
-                      style: TextStyle(color: PharmaTheme.textMuted, fontSize: 13, decoration: TextDecoration.underline),
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+                        fontSize: 13,
+                        decoration: TextDecoration.underline,
+                      ),
                     ),
                   ),
                 ],
@@ -379,7 +432,9 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
+      ],
+    ),
+  ),
+);
+}
 }

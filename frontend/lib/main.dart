@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/constants/app_constants.dart';
 import 'core/network/api_service.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_controller.dart';
 import 'data/models/medicine_search_model.dart';
 import 'presentation/screens/auth_screen.dart';
 import 'presentation/screens/medicine_details_screen.dart';
@@ -12,8 +14,29 @@ void main() {
   runApp(const PharmaConnectApp());
 }
 
-class PharmaConnectApp extends StatelessWidget {
+class PharmaConnectApp extends StatefulWidget {
   const PharmaConnectApp({super.key});
+
+  @override
+  State<PharmaConnectApp> createState() => _PharmaConnectAppState();
+}
+
+class _PharmaConnectAppState extends State<PharmaConnectApp> {
+  @override
+  void initState() {
+    super.initState();
+    ThemeController().addListener(_onThemeChanged);
+  }
+
+  @override
+  void dispose() {
+    ThemeController().removeListener(_onThemeChanged);
+    super.dispose();
+  }
+
+  void _onThemeChanged() {
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +44,18 @@ class PharmaConnectApp extends StatelessWidget {
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       theme: PharmaTheme.lightTheme,
+      darkTheme: PharmaTheme.darkTheme,
+      themeMode: ThemeController().themeMode,
+      locale: const Locale('ar', 'YE'),
+      supportedLocales: const [
+        Locale('ar', 'YE'),
+        Locale('ar', ''),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: ApiService().isAuthenticated ? const HomeScreen() : const AuthScreen(),
     );
   }
@@ -113,6 +148,16 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         actions: [
           IconButton(
+            icon: Icon(
+              ThemeController().isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_outlined,
+              color: ThemeController().isDarkMode ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark,
+            ),
+            tooltip: ThemeController().isDarkMode ? 'الوضع النهاري' : 'الوضع الليلي',
+            onPressed: () {
+              ThemeController().toggleTheme();
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.receipt_long_outlined),
             tooltip: 'حجوزاتي',
             onPressed: () {
@@ -139,7 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
               : const ProfileScreen(),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentTabIndex,
-        selectedItemColor: PharmaTheme.primaryGreen,
+        selectedItemColor: ThemeController().isDarkMode ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreen,
         unselectedItemColor: PharmaTheme.textMuted,
         onTap: (index) {
           setState(() {
@@ -165,9 +210,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSearchBody() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return RefreshIndicator(
       onRefresh: () => _fetchMedicines(_searchController.text),
-      color: PharmaTheme.primaryGreen,
+      color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreen,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16.0),
@@ -178,12 +224,21 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [PharmaTheme.primaryGreen, PharmaTheme.primaryGreenDark],
+                gradient: LinearGradient(
+                  colors: isDark
+                      ? [const Color(0xFF065F46), const Color(0xFF0F172A)]
+                      : [PharmaTheme.primaryGreen, PharmaTheme.primaryGreenDark],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: (isDark ? Colors.black : PharmaTheme.primaryGreen).withAlpha(40),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,6 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPreSearchState() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -308,12 +364,12 @@ class _HomeScreenState extends State<HomeScreen> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: isDark ? PharmaTheme.darkBorder : const Color(0xFFE2E8F0)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(6),
+                color: Colors.black.withAlpha(isDark ? 30 : 6),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -324,17 +380,17 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: PharmaTheme.mintAccent,
+                  color: isDark ? const Color(0xFF064E3B) : PharmaTheme.mintAccent,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.manage_search_rounded,
-                  color: PharmaTheme.primaryGreenDark,
+                  color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark,
                   size: 32,
                 ),
               ),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -343,13 +399,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: PharmaTheme.textMain,
+                        color: isDark ? PharmaTheme.darkTextMain : PharmaTheme.textMain,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       'اكتب اسم الدواء في مربع البحث أعلاه أو اضغط على أحد الأدوية الشائعة أدناه للتحقق من توفره في الصيدليات القريبة منك.',
-                      style: TextStyle(fontSize: 12, color: PharmaTheme.textMuted, height: 1.4),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? PharmaTheme.darkTextMuted : PharmaTheme.textMuted,
+                        height: 1.4,
+                      ),
                     ),
                   ],
                 ),
@@ -358,12 +418,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
+        Text(
           'أدوية شائعة للبحث السريع',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: PharmaTheme.textMain,
+            color: isDark ? PharmaTheme.darkTextMain : PharmaTheme.textMain,
           ),
         ),
         const SizedBox(height: 12),
@@ -372,17 +432,21 @@ class _HomeScreenState extends State<HomeScreen> {
           runSpacing: 10,
           children: _popularKeywords.map((keyword) {
             return ActionChip(
-              avatar: const Icon(Icons.medication_outlined, size: 16, color: PharmaTheme.primaryGreenDark),
+              avatar: Icon(
+                Icons.medication_outlined,
+                size: 16,
+                color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark,
+              ),
               label: Text(
                 keyword,
-                style: const TextStyle(
-                  color: PharmaTheme.primaryGreenDark,
+                style: TextStyle(
+                  color: isDark ? PharmaTheme.darkTextMain : PharmaTheme.primaryGreenDark,
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
                 ),
               ),
-              backgroundColor: const Color(0xFFF0FDF4),
-              side: const BorderSide(color: Color(0xFFBBF7D0)),
+              backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF0FDF4),
+              side: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFBBF7D0)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               onPressed: () => _onQuickSearch(keyword),
             );
@@ -394,10 +458,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildMedicineCard(MedicineSearchItem item) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         onTap: () {
           Navigator.push(
             context,
@@ -422,24 +487,36 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         item.medicine.tradeName,
-                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: PharmaTheme.textMain),
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? PharmaTheme.darkTextMain : PharmaTheme.textMain,
+                        ),
                       ),
                       Text(
                         item.medicine.scientificName,
-                        style: const TextStyle(fontSize: 13, color: PharmaTheme.textMuted, fontStyle: FontStyle.italic),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? PharmaTheme.darkTextMuted : PharmaTheme.textMuted,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     ],
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: item.status == 'available' ? PharmaTheme.mintAccent : const Color(0xFFFEF3C7),
+                      color: item.status == 'available'
+                          ? (isDark ? const Color(0xFF064E3B) : PharmaTheme.mintAccent)
+                          : (isDark ? const Color(0xFF78350F) : const Color(0xFFFEF3C7)),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       'متوفر ${item.availableQuantity} علبة',
                       style: TextStyle(
-                        color: item.status == 'available' ? PharmaTheme.primaryGreenDark : const Color(0xFFD97706),
+                        color: item.status == 'available'
+                            ? (isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark)
+                            : (isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706)),
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -450,22 +527,37 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 10),
               Row(
                 children: [
-                  const Icon(Icons.local_pharmacy, size: 16, color: PharmaTheme.primaryGreen),
-                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.local_pharmacy,
+                    size: 16,
+                    color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreen,
+                  ),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       item.pharmacy.name,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? PharmaTheme.darkTextMain : PharmaTheme.textMain,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 8),
                   if (item.distanceKm != null) ...[
-                    const Icon(Icons.near_me, size: 14, color: PharmaTheme.textMuted),
+                    Icon(
+                      Icons.near_me,
+                      size: 14,
+                      color: isDark ? PharmaTheme.darkTextMuted : PharmaTheme.textMuted,
+                    ),
                     const SizedBox(width: 2),
                     Text(
                       '${item.distanceKm} كم',
-                      style: const TextStyle(color: PharmaTheme.textMuted, fontSize: 12),
+                      style: TextStyle(
+                        color: isDark ? PharmaTheme.darkTextMuted : PharmaTheme.textMuted,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ],
@@ -473,18 +565,25 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(Icons.location_on, size: 14, color: PharmaTheme.textMuted),
-                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.location_on,
+                    size: 14,
+                    color: isDark ? PharmaTheme.darkTextMuted : PharmaTheme.textMuted,
+                  ),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       item.pharmacy.address,
-                      style: const TextStyle(color: PharmaTheme.textMuted, fontSize: 12),
+                      style: TextStyle(
+                        color: isDark ? PharmaTheme.darkTextMuted : PharmaTheme.textMuted,
+                        fontSize: 12,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
-              const Divider(height: 20),
+              Divider(height: 20, color: isDark ? PharmaTheme.darkBorder : const Color(0xFFE2E8F0)),
               Wrap(
                 alignment: WrapAlignment.spaceBetween,
                 crossAxisAlignment: WrapCrossAlignment.center,
@@ -494,10 +593,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('السعر', style: TextStyle(color: PharmaTheme.textMuted, fontSize: 11)),
+                      Text(
+                        'السعر الرسمي',
+                        style: TextStyle(
+                          color: isDark ? PharmaTheme.darkTextMuted : PharmaTheme.textMuted,
+                          fontSize: 11,
+                        ),
+                      ),
                       Text(
                         '${item.price.toStringAsFixed(0)} ${item.currency}',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: PharmaTheme.primaryGreen),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreen,
+                        ),
                       ),
                     ],
                   ),

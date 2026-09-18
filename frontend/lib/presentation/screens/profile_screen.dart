@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/network/api_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/theme_controller.dart';
 import 'auth_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -114,18 +115,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileView(dynamic user) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? PharmaTheme.darkSurface : Colors.white;
+    final borderColor = isDark ? PharmaTheme.darkBorder : const Color(0xFFE2E8F0);
+
     return Column(
       children: [
         // بطاقة الهوية الشخصية
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: cardBg,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: borderColor),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(8),
+                color: Colors.black.withAlpha(isDark ? 30 : 8),
                 blurRadius: 15,
                 offset: const Offset(0, 5),
               ),
@@ -136,43 +141,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: PharmaTheme.mintAccent,
+                  color: isDark ? const Color(0xFF064E3B) : PharmaTheme.mintAccent,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.person, size: 50, color: PharmaTheme.primaryGreenDark),
+                child: Icon(
+                  Icons.person,
+                  size: 50,
+                  color: isDark ? const Color(0xFF6EE7B7) : PharmaTheme.primaryGreenDark,
+                ),
               ),
               const SizedBox(height: 14),
               Text(
                 user.name,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: PharmaTheme.textMain),
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               Text(
                 user.email,
-                style: const TextStyle(fontSize: 14, color: PharmaTheme.textMuted),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+                ),
               ),
               if (user.phone != null) ...[
                 const SizedBox(height: 4),
                 Text(
                   user.phone!,
-                  style: const TextStyle(fontSize: 14, color: PharmaTheme.textMuted),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+                  ),
                 ),
               ],
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
+                  color: isDark ? const Color(0xFF064E3B).withAlpha(120) : const Color(0xFFDCFCE7),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.verified, size: 16, color: Color(0xFF15803D)),
-                    SizedBox(width: 6),
+                    Icon(
+                      Icons.verified,
+                      size: 16,
+                      color: isDark ? const Color(0xFF34D399) : const Color(0xFF15803D),
+                    ),
+                    const SizedBox(width: 6),
                     Text(
                       'مريض مسجل ومعتمد',
-                      style: TextStyle(color: Color(0xFF15803D), fontWeight: FontWeight.bold, fontSize: 12),
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF34D399) : const Color(0xFF15803D),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -186,16 +209,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: cardBg,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: borderColor),
           ),
           child: Column(
             children: [
+              // تبديل المظهر الليلي / النهاري
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF334155) : PharmaTheme.mintAccent,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    isDark ? Icons.dark_mode : Icons.light_mode,
+                    color: isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenDark,
+                    size: 20,
+                  ),
+                ),
+                title: const Text('المظهر الليلي (Dark Mode)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                subtitle: Text(
+                  isDark ? 'مفعل (ثيم مريح للعينين في الإضاءة الخافتة)' : 'معطل (الثيم النهاري الطبي)',
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
+                trailing: Switch(
+                  value: ThemeController().isDarkMode,
+                  activeThumbColor: PharmaTheme.primaryGreen,
+                  activeTrackColor: PharmaTheme.mintAccent,
+                  onChanged: (val) {
+                    ThemeController().toggleTheme();
+                    setState(() {});
+                  },
+                ),
+              ),
+              Divider(height: 16, color: borderColor),
               _buildSettingTile(Icons.location_city_outlined, 'المدينة والنطاق الجغرافي', 'صنعاء، اليمن'),
-              const Divider(height: 16),
+              Divider(height: 16, color: borderColor),
               _buildSettingTile(Icons.timer_outlined, 'مدة صلاحية الحجز الافتراضية', '30 دقيقة (TTL)'),
-              const Divider(height: 16),
+              Divider(height: 16, color: borderColor),
               _buildSettingTile(Icons.notifications_active_outlined, 'إشعارات توفر الدواء', 'مفعلة تلقائياً'),
             ],
           ),
@@ -205,11 +262,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         // زر تسجيل الخروج
         ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFFEE2E2),
-            foregroundColor: PharmaTheme.statusDanger,
+            backgroundColor: isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2),
+            foregroundColor: isDark ? const Color(0xFFFCA5A5) : PharmaTheme.statusDanger,
             minimumSize: const Size(double.infinity, 50),
             elevation: 0,
-            side: const BorderSide(color: Color(0xFFFECACA)),
+            side: BorderSide(color: isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFECACA)),
           ),
           onPressed: _logout,
           icon: const Icon(Icons.logout, size: 18),
@@ -220,12 +277,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildAuthForm() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? PharmaTheme.darkSurface : Colors.white;
+    final borderColor = isDark ? PharmaTheme.darkBorder : const Color(0xFFE2E8F0);
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBg,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,10 +296,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: PharmaTheme.mintAccent,
+                  color: isDark ? const Color(0xFF064E3B) : PharmaTheme.mintAccent,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.lock_outline, color: PharmaTheme.primaryGreenDark, size: 24),
+                child: Icon(
+                  Icons.lock_outline,
+                  color: isDark ? const Color(0xFF6EE7B7) : PharmaTheme.primaryGreenDark,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 12),
               Column(
@@ -248,9 +313,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _isRegistering ? 'إنشاء حساب مريض جديد' : 'تسجيل دخول المريض',
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  const Text(
+                  Text(
                     'لحفظ ومتابعة حجوزاتك الدوائية بسهولة',
-                    style: TextStyle(color: PharmaTheme.textMuted, fontSize: 12),
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),

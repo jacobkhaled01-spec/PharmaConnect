@@ -70,6 +70,10 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
   Widget build(BuildContext context) {
     final med = widget.item.medicine;
     final pharma = widget.item.pharmacy;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? PharmaTheme.darkSurface : Colors.white;
+    final borderColor = isDark ? PharmaTheme.darkBorder : const Color(0xFFE2E8F0);
+    final qtyBg = isDark ? PharmaTheme.darkSurfaceElevated : PharmaTheme.mintBackground;
 
     return Scaffold(
       appBar: AppBar(
@@ -84,9 +88,9 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: borderColor),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,18 +101,22 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
                       Expanded(
                         child: Text(
                           med.tradeName,
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: PharmaTheme.textMain),
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                         ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: PharmaTheme.mintAccent,
+                          color: isDark ? const Color(0xFF064E3B) : PharmaTheme.mintAccent,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           'متوفر ${widget.item.availableQuantity} علبة',
-                          style: const TextStyle(color: PharmaTheme.primaryGreenDark, fontWeight: FontWeight.bold, fontSize: 12),
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenDark,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ],
@@ -116,14 +124,18 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
                   const SizedBox(height: 6),
                   Text(
                     med.scientificName,
-                    style: const TextStyle(fontSize: 15, color: PharmaTheme.textMuted, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
-                  const Divider(height: 24),
-                  _buildDetailRow('الشكل الصيدلاني والتركيز:', '${med.dosageForm ?? 'أقراص'} - ${med.strength ?? ''}'),
+                  Divider(height: 24, color: borderColor),
+                  _buildDetailRow('الشكل الصيدلاني والتركيز:', '${med.dosageForm ?? 'أقراص'} - ${med.strength ?? ''}', isDark),
                   if (med.manufacturer != null)
-                    _buildDetailRow('الشركة المصنعة:', med.manufacturer!),
+                    _buildDetailRow('الشركة المصنعة:', med.manufacturer!, isDark),
                   if (med.category != null)
-                    _buildDetailRow('التصنيف الطبي:', med.category!),
+                    _buildDetailRow('التصنيف الطبي:', med.category!, isDark),
                   if (med.isPrescriptionRequired)
                     const Padding(
                       padding: EdgeInsets.only(top: 8.0),
@@ -151,9 +163,9 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: borderColor),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,9 +186,17 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 16, color: PharmaTheme.textMuted),
+                      Icon(Icons.location_on, size: 16, color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted),
                       const SizedBox(width: 4),
-                      Expanded(child: Text(pharma.address, style: const TextStyle(color: PharmaTheme.textMuted, fontSize: 13))),
+                      Expanded(
+                        child: Text(
+                          pharma.address,
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
                       if (widget.item.distanceKm != null)
                         Text('${widget.item.distanceKm} كم', style: const TextStyle(fontWeight: FontWeight.bold, color: PharmaTheme.primaryGreen)),
                     ],
@@ -197,9 +217,9 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: PharmaTheme.mintBackground,
+                color: qtyBg,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: PharmaTheme.mintAccent),
+                border: Border.all(color: isDark ? PharmaTheme.darkBorder : PharmaTheme.mintAccent),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -207,8 +227,18 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('سعر العبوة الواحدة:', style: TextStyle(fontSize: 12, color: PharmaTheme.textMuted)),
-                      Text('${widget.item.price.toStringAsFixed(0)} ريال', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: PharmaTheme.primaryGreenDark)),
+                      Text(
+                        'سعر العبوة الواحدة:',
+                        style: TextStyle(fontSize: 12, color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted),
+                      ),
+                      Text(
+                        '${widget.item.price.toStringAsFixed(0)} ريال',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenDark,
+                        ),
+                      ),
                     ],
                   ),
                   Row(
@@ -237,9 +267,9 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: borderColor),
               ),
               child: Column(
                 children: [
@@ -284,13 +314,19 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildDetailRow(String label, String value, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: PharmaTheme.textMuted, fontSize: 13)),
+          Text(
+            label,
+            style: TextStyle(
+              color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+              fontSize: 13,
+            ),
+          ),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
         ],
       ),
