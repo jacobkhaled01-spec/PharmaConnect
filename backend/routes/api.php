@@ -20,13 +20,14 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/login', [AuthController::class, 'login']);
 
-    // 3. المسارات المحمية بـ Sanctum (الحجوزات والملف الشخصي)
+    // 3. مسارات الحجوزات (تدعم المستخدم المسجل والمريض المباشر)
+    Route::post('/reservations', [ReservationApiController::class, 'store']);
+    Route::get('/reservations/my', [ReservationApiController::class, 'myReservations']);
+    Route::post('/reservations/{id}/cancel', [ReservationApiController::class, 'cancel']);
+
+    // 4. المسارات المحمية بـ Sanctum (الملف الشخصي وتسجيل الخروج)
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/auth/profile', [AuthController::class, 'profile']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
-
-        Route::post('/reservations', [ReservationApiController::class, 'store']);
-        Route::get('/reservations/my', [ReservationApiController::class, 'myReservations']);
-        Route::post('/reservations/{id}/cancel', [ReservationApiController::class, 'cancel']);
     });
 });

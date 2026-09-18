@@ -4,6 +4,7 @@ import 'core/network/api_service.dart';
 import 'core/theme/app_theme.dart';
 import 'data/models/medicine_search_model.dart';
 import 'presentation/screens/medicine_details_screen.dart';
+import 'presentation/screens/my_reservations_screen.dart';
 
 void main() {
   runApp(const PharmaConnectApp());
@@ -31,6 +32,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int _currentTabIndex = 0;
   final TextEditingController _searchController = TextEditingController();
   List<MedicineSearchItem> _searchResults = [];
   bool _isLoading = false;
@@ -84,130 +86,165 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.receipt_long_outlined),
+            tooltip: 'حجوزاتي',
+            onPressed: () {
+              setState(() {
+                _currentTabIndex = 1;
+              });
+            },
+          ),
+        ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () => _fetchMedicines(_searchController.text),
-        color: PharmaTheme.primaryGreen,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ترويسة البحث
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [PharmaTheme.primaryGreen, PharmaTheme.primaryGreenDark],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
+      body: _currentTabIndex == 0 ? _buildSearchBody() : const MyReservationsScreen(),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentTabIndex,
+        selectedItemColor: PharmaTheme.primaryGreen,
+        unselectedItemColor: PharmaTheme.textMuted,
+        onTap: (index) {
+          setState(() {
+            _currentTabIndex = index;
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: 'البحث عن الأدوية',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long_rounded),
+            label: 'طلباتي وحجوزاتي',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBody() {
+    return RefreshIndicator(
+      onRefresh: () => _fetchMedicines(_searchController.text),
+      color: PharmaTheme.primaryGreen,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ترويسة البحث
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [PharmaTheme.primaryGreen, PharmaTheme.primaryGreenDark],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'ابحث عن دوائك الآن',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'تحقق لحظياً من الصيدليات المتوفر لديها الدواء وأقربها إليك',
-                      style: TextStyle(
-                        color: Colors.white.withAlpha(220),
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _searchController,
-                      onChanged: (val) {
-                        _fetchMedicines(val);
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'اكتب اسم الدواء التجاري أو العلمي...',
-                        prefixIcon: const Icon(Icons.search, color: PharmaTheme.primaryGreen),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear, color: PharmaTheme.textMuted),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  _fetchMedicines();
-                                },
-                              )
-                            : const Icon(Icons.filter_list, color: PharmaTheme.primaryGreen),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
+                borderRadius: BorderRadius.circular(20),
               ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'نتائج التوفر والصيدليات القريبة',
+                    'ابحث عن دوائك الآن',
                     style: TextStyle(
-                      fontSize: 18,
+                      color: Colors.white,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: PharmaTheme.textMain,
                     ),
                   ),
+                  const SizedBox(height: 6),
                   Text(
-                    '${_searchResults.length} نتائج',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: PharmaTheme.textMuted,
-                      fontWeight: FontWeight.w600,
+                    'تحقق لحظياً من الصيدليات المتوفر لديها الدواء وأقربها إليك',
+                    style: TextStyle(
+                      color: Colors.white.withAlpha(220),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _searchController,
+                    onChanged: (val) {
+                      _fetchMedicines(val);
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'اكتب اسم الدواء التجاري أو العلمي...',
+                      prefixIcon: const Icon(Icons.search, color: PharmaTheme.primaryGreen),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, color: PharmaTheme.textMuted),
+                              onPressed: () {
+                                _searchController.clear();
+                                _fetchMedicines();
+                              },
+                            )
+                          : const Icon(Icons.filter_list, color: PharmaTheme.primaryGreen),
+                      filled: true,
+                      fillColor: Colors.white,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-
-              if (_isLoading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(
-                    child: CircularProgressIndicator(color: PharmaTheme.primaryGreen),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'نتائج التوفر والصيدليات القريبة',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: PharmaTheme.textMain,
                   ),
-                )
-              else if (_searchResults.isEmpty)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 40.0),
-                    child: Column(
-                      children: [
-                        Icon(Icons.search_off, size: 60, color: Colors.grey.shade400),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'لا توجد أدوية متطابقة مع بحثك حالياً',
-                          style: TextStyle(color: PharmaTheme.textMuted, fontSize: 15),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _searchResults.length,
-                  itemBuilder: (context, index) {
-                    final item = _searchResults[index];
-                    return _buildMedicineCard(item);
-                  },
                 ),
-            ],
-          ),
+                Text(
+                  '${_searchResults.length} نتائج',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: PharmaTheme.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: Center(
+                  child: CircularProgressIndicator(color: PharmaTheme.primaryGreen),
+                ),
+              )
+            else if (_searchResults.isEmpty)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40.0),
+                  child: Column(
+                    children: [
+                      Icon(Icons.search_off, size: 60, color: Colors.grey.shade400),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'لا توجد أدوية متطابقة مع بحثك حالياً',
+                        style: TextStyle(color: PharmaTheme.textMuted, fontSize: 15),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _searchResults.length,
+                itemBuilder: (context, index) {
+                  final item = _searchResults[index];
+                  return _buildMedicineCard(item);
+                },
+              ),
+          ],
         ),
       ),
     );

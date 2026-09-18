@@ -53,6 +53,34 @@ class ApiService {
     return _getFallbackSearchResults(query);
   }
 
+  final List<ReservationModel> _cachedReservations = [];
+
+  /// جلب قائمة حجوزات المريض الحالية والسابقة
+  Future<List<ReservationModel>> getMyReservations() async {
+    try {
+      final uri = Uri.parse('${AppConstants.baseUrl}${AppConstants.myReservationsEndpoint}');
+      final response = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
+
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        final List data = body['data'] ?? [];
+        final items = data.map((item) => ReservationModel.fromJson(item)).toList();
+        
+        // مزامنة الكاش المحلي
+        for (final item in items) {
+          if (!_cachedReservations.any((r) => r.id == item.id)) {
+            _cachedReservations.insert(0, item);
+          }
+        }
+        return _cachedReservations;
+      }
+    } catch (_) {
+      // Fallback
+    }
+
+    return _cachedReservations;
+  }
+
   /// إرسال طلب حجز مؤقت
   Future<ReservationModel> createReservation({
     required int stockId,
@@ -71,20 +99,22 @@ class ApiService {
               'ttl_minutes': ttlMinutes,
             }),
           )
-          .timeout(const Duration(seconds: 3));
+          .timeout(const Duration(seconds: 4));
 
       if (response.statusCode == 201) {
         final body = json.decode(response.body);
-        return ReservationModel.fromJson(body['data']);
+        final created = ReservationModel.fromJson(body['data']);
+        _cachedReservations.insert(0, created);
+        return created;
       }
     } catch (_) {
       // Fallback
     }
 
     // نموذج حجز مؤقت جاهز
-    return ReservationModel(
-      id: 1,
-      reservationCode: 'RES-74921',
+    final fallbackRes = ReservationModel(
+      id: DateTime.now().millisecondsSinceEpoch,
+      reservationCode: 'RES-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
       status: 'pending',
       totalAmount: 1200.0 * quantity,
       currency: 'YER',
@@ -110,6 +140,9 @@ class ApiService {
       ],
       createdAt: DateTime.now(),
     );
+
+    _cachedReservations.insert(0, fallbackRes);
+    return fallbackRes;
   }
 
   /// بيانات محاكاة مطابقة لبيانات قاعدة البيانات الحقيقية
