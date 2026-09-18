@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/network/api_service.dart';
 import '../../core/theme/app_theme.dart';
+import 'auth_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -86,11 +87,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _logout() {
-    setState(() {
-      ApiService().logout();
-    });
+    ApiService().logout();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('تم تسجيل الخروج بنجاح')),
+    );
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const AuthScreen()),
+      (route) => false,
     );
   }
 

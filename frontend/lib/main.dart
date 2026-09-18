@@ -3,6 +3,7 @@ import 'core/constants/app_constants.dart';
 import 'core/network/api_service.dart';
 import 'core/theme/app_theme.dart';
 import 'data/models/medicine_search_model.dart';
+import 'presentation/screens/auth_screen.dart';
 import 'presentation/screens/medicine_details_screen.dart';
 import 'presentation/screens/my_reservations_screen.dart';
 import 'presentation/screens/profile_screen.dart';
@@ -20,7 +21,7 @@ class PharmaConnectApp extends StatelessWidget {
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       theme: PharmaTheme.lightTheme,
-      home: const HomeScreen(),
+      home: ApiService().isAuthenticated ? const HomeScreen() : const AuthScreen(),
     );
   }
 }
