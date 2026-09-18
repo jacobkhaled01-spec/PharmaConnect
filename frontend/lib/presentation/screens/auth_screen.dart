@@ -310,7 +310,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           TextField(
                             controller: _nameController,
                             decoration: const InputDecoration(
-                              labelText: 'الاسم الكامل للمريض',
+                              labelText: 'الاسم الكامل للعميل / المستخدم',
                               hintText: 'مثال: يعقوب خالد',
                               prefixIcon: Icon(Icons.person_outline),
                             ),

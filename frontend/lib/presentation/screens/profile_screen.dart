@@ -20,6 +20,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
+  String _selectedCity = 'صنعاء، اليمن';
+  bool _notificationsEnabled = true;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -27,6 +30,253 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _showEditProfileModal(dynamic user) {
+    final nameEditController = TextEditingController(text: user.name);
+    final phoneEditController = TextEditingController(text: user.phone ?? '');
+    bool isSaving = false;
+    String? editError;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 24,
+                bottom: MediaQuery.of(modalContext).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'تعديل البيانات الشخصية',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(modalContext),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 12),
+                  if (editError != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEE2E2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        editError!,
+                        style: const TextStyle(color: PharmaTheme.statusDanger, fontSize: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  TextField(
+                    controller: nameEditController,
+                    decoration: const InputDecoration(
+                      labelText: 'الاسم الكامل',
+                      prefixIcon: Icon(Icons.person_outline),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: phoneEditController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'رقم الهاتف للتواصل',
+                      prefixIcon: Icon(Icons.phone_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: isSaving
+                        ? null
+                        : () async {
+                            final newName = nameEditController.text.trim();
+                            final newPhone = phoneEditController.text.trim();
+                            if (newName.isEmpty) {
+                              setModalState(() {
+                                editError = 'يرجى إدخال الاسم.';
+                              });
+                              return;
+                            }
+
+                            setModalState(() {
+                              isSaving = true;
+                              editError = null;
+                            });
+
+                            final messenger = ScaffoldMessenger.of(context);
+                            final navigator = Navigator.of(modalContext);
+                            final res = await ApiService().updateProfile(
+                              name: newName,
+                              phone: newPhone,
+                            );
+
+                            if (res.success) {
+                              if (mounted) {
+                                navigator.pop();
+                                setState(() {});
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('تم حفظ وتحديث بيانات الحساب بنجاح!'),
+                                    backgroundColor: PharmaTheme.primaryGreen,
+                                  ),
+                                );
+                              }
+                            } else {
+                              setModalState(() {
+                                isSaving = false;
+                                editError = res.errorMessage ?? 'تعذر حفظ البيانات.';
+                              });
+                            }
+                          },
+                    child: isSaving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : const Text('حفظ التعديلات الآن'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showCitySelector() {
+    final cities = [
+      'صنعاء، اليمن',
+      'عدن، اليمن',
+      'تعز، اليمن',
+      'إب، اليمن',
+      'حضرموت / المكلا',
+      'الحديدة، اليمن',
+      'ذمار، اليمن',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'اختر المدينة / النطاق الجغرافي',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'يتم استخدام هذا النطاق لحساب المسافة للصيدليات الأقرب إليك',
+                style: TextStyle(color: PharmaTheme.textMuted, fontSize: 12),
+              ),
+              const Divider(height: 20),
+              ...cities.map((city) {
+                final isSelected = city == _selectedCity;
+                return ListTile(
+                  leading: Icon(
+                    Icons.location_city_rounded,
+                    color: isSelected ? PharmaTheme.primaryGreen : PharmaTheme.textMuted,
+                  ),
+                  title: Text(
+                    city,
+                    style: TextStyle(
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected ? PharmaTheme.primaryGreenDark : null,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? const Icon(Icons.check_circle_rounded, color: PharmaTheme.primaryGreen)
+                      : null,
+                  onTap: () {
+                    setState(() {
+                      _selectedCity = city;
+                    });
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('تم تعيين النطاق الجغرافي: $city'),
+                        backgroundColor: PharmaTheme.primaryGreen,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showTtlInfoDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.timer_outlined, color: PharmaTheme.primaryGreen),
+            SizedBox(width: 8),
+            Text('صلاحية الحجز (TTL)'),
+          ],
+        ),
+        content: const Text(
+          'تمنحك المنصة مهلة افتراضية قدرها 30 دقيقة للحجز المؤكد.\n\n'
+          'خلال هذه المهلة يتم حجز كمية الدواء لك في مخزون الصيدلية تلقائياً ومنع بيعها لعميل آخر لحين وصولك واستلامها، لضمان عدم نفاد الدواء أثناء توجهك للصيدلية.',
+          style: TextStyle(fontSize: 14, height: 1.6),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('حسناً، فهمت'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _toggleNotifications() {
+    setState(() {
+      _notificationsEnabled = !_notificationsEnabled;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _notificationsEnabled
+              ? 'تم تفعيل إشعارات وتنبيهات توفر الأدوية.'
+              : 'تم تعطيل إشعارات توفر الأدوية مؤقتاً.',
+        ),
+        backgroundColor: _notificationsEnabled ? PharmaTheme.primaryGreen : PharmaTheme.statusDanger,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _submitAuth() async {
@@ -192,6 +442,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ],
               const SizedBox(height: 16),
+              // شارة عميل موثّق
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 decoration: BoxDecoration(
@@ -211,7 +462,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'مريض مسجل ومعتمد',
+                      'عميل موثّق ومعتمد',
                       style: TextStyle(
                         color: isDark ? const Color(0xFF34D399) : const Color(0xFF15803D),
                         fontWeight: FontWeight.bold,
@@ -219,6 +470,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              // زر تعديل البيانات الشخصية
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreen,
+                  side: BorderSide(
+                    color: isDark ? const Color(0xFF047857) : PharmaTheme.primaryGreenLight,
+                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                ),
+                onPressed: () => _showEditProfileModal(user),
+                icon: const Icon(Icons.edit_outlined, size: 16),
+                label: const Text(
+                  'تعديل البيانات الشخصية',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
               ),
             ],
@@ -263,8 +532,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildSettingTile(
                 icon: Icons.location_on_rounded,
                 title: 'المدينة والنطاق الجغرافي',
-                subtitle: 'تحديد الصيدليات القريبة منك',
-                trailing: _buildBadge('صنعاء، اليمن', isDark),
+                subtitle: 'اضغط لتغيير المدينة الحالية',
+                trailing: _buildBadge(_selectedCity, isDark),
+                onTap: _showCitySelector,
               ),
               Divider(height: 1, indent: 64, endIndent: 16, color: borderColor),
               _buildSettingTile(
@@ -272,13 +542,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 title: 'صلاحية الحجز الافتراضية',
                 subtitle: 'المهلة الممنوحة للاستلام (TTL)',
                 trailing: _buildBadge('30 دقيقة', isDark),
+                onTap: _showTtlInfoDialog,
               ),
               Divider(height: 1, indent: 64, endIndent: 16, color: borderColor),
               _buildSettingTile(
                 icon: Icons.notifications_active_rounded,
                 title: 'إشعارات توفر الدواء',
-                subtitle: 'تنبيهات فورية عند وصول الأدوية',
-                trailing: _buildBadge('مفعلة', isDark, isSuccess: true),
+                subtitle: 'اضغط للتبديل السريع',
+                trailing: _buildBadge(
+                  _notificationsEnabled ? 'مفعلة' : 'معطلة',
+                  isDark,
+                  isSuccess: _notificationsEnabled,
+                ),
+                onTap: _toggleNotifications,
               ),
             ],
           ),
@@ -337,7 +613,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _isRegistering ? 'إنشاء حساب مريض جديد' : 'تسجيل دخول المريض',
+                    _isRegistering ? 'إنشاء حساب جديد' : 'تسجيل الدخول للعميل',
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Text(
@@ -459,12 +735,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String title,
     required String subtitle,
     required Widget trailing,
+    VoidCallback? onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final iconBg = isDark ? const Color(0xFF334155) : PharmaTheme.mintAccent;
     final iconColor = isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenDark;
 
     return ListTile(
+      onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       leading: Container(
         width: 42,

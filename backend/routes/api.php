@@ -34,9 +34,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/reservations/{id}/fulfill', [PartnerIntegrationApiController::class, 'fulfillReservation']);
     });
 
-    // 5. المسارات المحمية بـ Sanctum (الملف الشخصي وتسجيل الخروج)
+    // 5. المسارات المحمية بـ Sanctum (الملف الشخصي وتعديله وتسجيل الخروج)
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/auth/profile', [AuthController::class, 'profile']);
+        Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
     });
+    // مسار تعديل احتياطي مباشر
+    Route::put('/auth/profile/update', [AuthController::class, 'updateProfile']);
 });

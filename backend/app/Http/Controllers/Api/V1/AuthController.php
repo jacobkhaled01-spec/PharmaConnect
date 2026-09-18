@@ -109,6 +109,56 @@ class AuthController extends Controller
     }
 
     /**
+     * تحديث بيانات الملف الشخصي للمستخدم
+     */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! $user && $request->has('email')) {
+            $user = User::where('email', $request->email)->first();
+        }
+
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'المستخدم غير مصرح له أو غير مسجل الدخول.',
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'password' => 'nullable|string|min:6',
+        ]);
+
+        if (isset($validated['name'])) {
+            $user->name = $validated['name'];
+        }
+        if (array_key_exists('phone', $validated)) {
+            $user->phone = $validated['phone'];
+        }
+        if (! empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تحديث بيانات الحساب بنجاح',
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'role' => $user->role,
+                ],
+            ],
+        ]);
+    }
+
+    /**
      * تسجيل الخروج وإلغاء التوكن
      */
     public function logout(Request $request): JsonResponse

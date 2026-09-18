@@ -261,8 +261,8 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
             ),
             const SizedBox(height: 20),
 
-            // بيانات المريض المستلم
-            const Text('بيانات المريض المستلم (لتسجيل الحجز باسمك)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            // بيانات المستلم / العميل
+            const Text('بيانات المستلم (لتسجيل الحجز باسمك)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(16),
@@ -276,7 +276,7 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
                   TextField(
                     controller: _nameController,
                     decoration: const InputDecoration(
-                      labelText: 'اسم المريض / المستلم',
+                      labelText: 'اسم المستلم / العميل',
                       hintText: 'مثال: يعقوب خالد',
                       prefixIcon: Icon(Icons.person_outline, color: PharmaTheme.primaryGreen),
                       isDense: true,

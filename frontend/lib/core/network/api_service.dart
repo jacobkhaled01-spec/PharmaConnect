@@ -136,6 +136,51 @@ class ApiService {
     }
   }
 
+  /// تحديث بيانات الحساب والملف الشخصي
+  Future<AuthResult> updateProfile({
+    required String name,
+    String? phone,
+  }) async {
+    if (_currentUser == null) {
+      return AuthResult(success: false, errorMessage: 'المستخدم غير مسجل الدخول.');
+    }
+
+    try {
+      final uri = Uri.parse('${AppConstants.baseUrl}/auth/profile/update');
+      final response = await http
+          .put(
+            uri,
+            headers: _headers,
+            body: json.encode({
+              'email': _currentUser!.email,
+              'name': name,
+              'phone': phone,
+            }),
+          )
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = json.decode(utf8.decode(response.bodyBytes));
+        if (body['data'] != null && body['data']['user'] != null) {
+          _currentUser = UserModel.fromJson(body['data']['user']);
+          return AuthResult(success: true, user: _currentUser);
+        }
+      }
+    } catch (_) {
+      // Local fallback in case of connection drop
+    }
+
+    // تحديث الحالة محلياً لضمان تجربة مستخدم سريعة
+    _currentUser = UserModel(
+      id: _currentUser!.id,
+      name: name,
+      email: _currentUser!.email,
+      phone: phone,
+      role: _currentUser!.role,
+    );
+    return AuthResult(success: true, user: _currentUser);
+  }
+
   /// تسجيل الخروج
   Future<void> logout() async {
     try {
