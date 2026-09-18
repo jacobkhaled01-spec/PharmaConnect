@@ -2,6 +2,28 @@
 
 جميع التعديلات والخطوات البرمجية والتوثيقية لمشروع الصيدلية (خادم وعميل).
 
+## [1.3.0] - 2026-09-18
+### أضيف (Added)
+- **بروتوكول التوثيق اللحظي بعد كل خطوة:** استحداث قاعدة `06_continuous_documentation.md` في `.agents/rules/` لإلزام التوثيق الفوري.
+- **منظومة CI/CD واختبارات الجودة:** استحداث قاعدة `07_ci_cd_and_automated_testing.md` لتنظيم اختبارات **Laravel Pint** و **PHPUnit** و **Flutter Test**.
+- **خطوط أنابيب GitHub Actions:**
+  - إنشاء `.github/workflows/backend-ci.yml` لفحص كود Laravel وتنسيقه بـ Pint واختبارات قاعدة البيانات.
+  - إنشاء `.github/workflows/frontend-ci.yml` للتحليل الساكن واختبارات Flutter التلقائية.
+- **قوالب مراجعة الكود وإدارة التذاكر على GitHub:**
+  - إنشاء `.github/pull_request_template.md` متضمناً قائمة تدقيق مراجعة الكود من 6 مراحل: (Generate, Self-Review, Pint/Lint, Auto Test, Docs, UI/UX).
+  - إنشاء قوالب التذاكر: `.github/ISSUE_TEMPLATE/bug_report.md` و `feature_request.md`.
+- **المهارات التخصصية المتقدمة:**
+  - إنشاء مهارة `pharmaconnect-code-practices`: معايير الكود النظيف، تسميات PSR-12 و Effective Dart، تجنب الـ Code Smells وإرشادات الـ Refactoring.
+  - إنشاء مهارة `pharmaconnect-testing-and-ci`: أوامر تشغيل Pint، اختبارات Unit و Feature، وإدارة سير عمل الـ CI.
+- **هيكلة المشروع المادية المنعزلة:**
+  - تأسيس مجلد `/backend` مع ملف `README.md` لإدارة صفحات ويب المخزون والـ RESTful APIs.
+  - تأسيس مجلد `/frontend` مع ملف `README.md` لتطبيق الهاتف الموجه للمريض (Flutter).
+  - تأسيس مجلد `/docs` مع ملف `README.md` لمخططات UML ونماذج المعمارية وفق توثيق APA 7.
+### معدل (Changed)
+- تحديث [`GEMINI.md`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/GEMINI.md) لدمج التوثيق اللحظي، ومراحل الـ Code Review، ومسارات CI/CD، وهيكل المجلدات.
+- تحديث وثيقة المقترح الرسمية [`مقترح_المشروع_المعتمد.md`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/مقترح_المشروع_المعتمد.md) لإعادة توزيع الفريق التقني بين **3 أعضاء متكاملين** وتوضيح هيكل المجلدات (`/backend`, `/frontend`, `/docs`).
+- تحديث قاعدة `04_git_github_workflow.md` بتفاصيل مراحل مراجعة الأكواد الستة.
+
 ## [1.2.0] - 2026-09-18
 ### أضيف (Added)
 - إنشاء دستور المشروع الأصلي لمحرك Gemini: [`GEMINI.md`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/GEMINI.md).
