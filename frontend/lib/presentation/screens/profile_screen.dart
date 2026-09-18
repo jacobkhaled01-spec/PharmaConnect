@@ -107,9 +107,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         title: const Text('الملف الشخصي والحساب'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: isLoggedIn && user != null ? _buildProfileView(user) : _buildAuthForm(),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: isLoggedIn && user != null ? _buildProfileView(user) : _buildAuthForm(),
+          ),
+        ),
       ),
     );
   }
@@ -120,71 +125,87 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final borderColor = isDark ? PharmaTheme.darkBorder : const Color(0xFFE2E8F0);
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // بطاقة الهوية الشخصية
+        // بطاقة الهوية الشخصية (عرض كامل موحد)
         Container(
-          padding: const EdgeInsets.all(24),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 20),
           decoration: BoxDecoration(
             color: cardBg,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: borderColor),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(isDark ? 30 : 8),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
+                color: Colors.black.withAlpha(isDark ? 30 : 6),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(18),
+                width: 84,
+                height: 84,
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF064E3B) : PharmaTheme.mintAccent,
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenLight,
+                    width: 2.5,
+                  ),
                 ),
                 child: Icon(
-                  Icons.person,
+                  Icons.person_rounded,
                   size: 50,
                   color: isDark ? const Color(0xFF6EE7B7) : PharmaTheme.primaryGreenDark,
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               Text(
                 user.name,
+                textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               Text(
                 user.email,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
                   color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
                 ),
               ),
-              if (user.phone != null) ...[
+              if (user.phone != null && user.phone!.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(
                   user.phone!,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
                     color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+                    letterSpacing: 1.1,
                   ),
                 ),
               ],
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF064E3B).withAlpha(120) : const Color(0xFFDCFCE7),
+                  color: isDark ? const Color(0xFF064E3B).withAlpha(140) : const Color(0xFFDCFCE7),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF047857) : const Color(0xFF86EFAC),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.verified,
+                      Icons.verified_rounded,
                       size: 16,
                       color: isDark ? const Color(0xFF34D399) : const Color(0xFF15803D),
                     ),
@@ -203,41 +224,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
 
-        // إعدادات وبيانات إضافية
+        // بطاقة الإعدادات والخيارات (بنفس العرض والتباعد)
         Container(
-          padding: const EdgeInsets.all(16),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           decoration: BoxDecoration(
             color: cardBg,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(isDark ? 30 : 6),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             children: [
               // تبديل المظهر الليلي / النهاري
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF334155) : PharmaTheme.mintAccent,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    isDark ? Icons.dark_mode : Icons.light_mode,
-                    color: isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenDark,
-                    size: 20,
-                  ),
-                ),
-                title: const Text('المظهر الليلي (Dark Mode)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                subtitle: Text(
-                  isDark ? 'مفعل (ثيم مريح للعينين في الإضاءة الخافتة)' : 'معطل (الثيم النهاري الطبي)',
-                  style: TextStyle(
-                    color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
-                    fontSize: 12,
-                  ),
-                ),
+              _buildSettingTile(
+                icon: isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                title: 'المظهر الليلي (Dark Mode)',
+                subtitle: isDark ? 'مفعل (مريح للعينين)' : 'معطل (الثيم النهاري الطبي)',
                 trailing: Switch(
                   value: ThemeController().isDarkMode,
                   activeThumbColor: PharmaTheme.primaryGreen,
@@ -248,29 +259,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   },
                 ),
               ),
-              Divider(height: 16, color: borderColor),
-              _buildSettingTile(Icons.location_city_outlined, 'المدينة والنطاق الجغرافي', 'صنعاء، اليمن'),
-              Divider(height: 16, color: borderColor),
-              _buildSettingTile(Icons.timer_outlined, 'مدة صلاحية الحجز الافتراضية', '30 دقيقة (TTL)'),
-              Divider(height: 16, color: borderColor),
-              _buildSettingTile(Icons.notifications_active_outlined, 'إشعارات توفر الدواء', 'مفعلة تلقائياً'),
+              Divider(height: 1, indent: 64, endIndent: 16, color: borderColor),
+              _buildSettingTile(
+                icon: Icons.location_on_rounded,
+                title: 'المدينة والنطاق الجغرافي',
+                subtitle: 'تحديد الصيدليات القريبة منك',
+                trailing: _buildBadge('صنعاء، اليمن', isDark),
+              ),
+              Divider(height: 1, indent: 64, endIndent: 16, color: borderColor),
+              _buildSettingTile(
+                icon: Icons.timer_rounded,
+                title: 'صلاحية الحجز الافتراضية',
+                subtitle: 'المهلة الممنوحة للاستلام (TTL)',
+                trailing: _buildBadge('30 دقيقة', isDark),
+              ),
+              Divider(height: 1, indent: 64, endIndent: 16, color: borderColor),
+              _buildSettingTile(
+                icon: Icons.notifications_active_rounded,
+                title: 'إشعارات توفر الدواء',
+                subtitle: 'تنبيهات فورية عند وصول الأدوية',
+                trailing: _buildBadge('مفعلة', isDark, isSuccess: true),
+              ),
             ],
           ),
         ),
-        const SizedBox(height: 30),
+        const SizedBox(height: 24),
 
         // زر تسجيل الخروج
         ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
             backgroundColor: isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2),
             foregroundColor: isDark ? const Color(0xFFFCA5A5) : PharmaTheme.statusDanger,
-            minimumSize: const Size(double.infinity, 50),
+            minimumSize: const Size(double.infinity, 52),
             elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             side: BorderSide(color: isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFECACA)),
           ),
           onPressed: _logout,
-          icon: const Icon(Icons.logout, size: 18),
-          label: const Text('تسجيل الخروج من الحساب', style: TextStyle(fontWeight: FontWeight.bold)),
+          icon: const Icon(Icons.logout_rounded, size: 20),
+          label: const Text('تسجيل الخروج من الحساب', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
         ),
       ],
     );
@@ -427,21 +454,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSettingTile(IconData icon, String title, String subtitle) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: PharmaTheme.primaryGreen),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              Text(subtitle, style: const TextStyle(color: PharmaTheme.textMuted, fontSize: 12)),
-            ],
-          ),
+  Widget _buildSettingTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Widget trailing,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconBg = isDark ? const Color(0xFF334155) : PharmaTheme.mintAccent;
+    final iconColor = isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenDark;
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      leading: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: iconBg,
+          borderRadius: BorderRadius.circular(12),
         ),
-      ],
+        child: Icon(icon, color: iconColor, size: 22),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
+          fontSize: 12,
+        ),
+      ),
+      trailing: trailing,
+    );
+  }
+
+  Widget _buildBadge(String text, bool isDark, {bool isSuccess = false}) {
+    final bg = isSuccess
+        ? (isDark ? const Color(0xFF064E3B) : const Color(0xFFDCFCE7))
+        : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9));
+    final fg = isSuccess
+        ? (isDark ? const Color(0xFF34D399) : const Color(0xFF15803D))
+        : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569));
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(color: fg, fontWeight: FontWeight.bold, fontSize: 12),
+      ),
     );
   }
 }
