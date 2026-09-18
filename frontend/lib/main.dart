@@ -271,11 +271,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   const Icon(Icons.local_pharmacy, size: 16, color: PharmaTheme.primaryGreen),
                   const SizedBox(width: 4),
-                  Text(
-                    item.pharmacy.name,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  Expanded(
+                    child: Text(
+                      item.pharmacy.name,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   if (item.distanceKm != null) ...[
                     const Icon(Icons.near_me, size: 14, color: PharmaTheme.textMuted),
                     const SizedBox(width: 2),
@@ -301,8 +304,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const Divider(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                runSpacing: 10,
+                spacing: 8,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

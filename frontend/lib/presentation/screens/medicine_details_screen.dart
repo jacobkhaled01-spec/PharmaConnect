@@ -107,7 +107,12 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
                         children: [
                           Icon(Icons.warning_amber_rounded, size: 18, color: PharmaTheme.statusDanger),
                           SizedBox(width: 6),
-                          Text('يتطلب وصفة طبية معتمدة عند الاستلام', style: TextStyle(color: PharmaTheme.statusDanger, fontSize: 12, fontWeight: FontWeight.bold)),
+                          Expanded(
+                            child: Text(
+                              'يتطلب وصفة طبية معتمدة عند الاستلام',
+                              style: TextStyle(color: PharmaTheme.statusDanger, fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -133,7 +138,13 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
                     children: [
                       const Icon(Icons.local_pharmacy, color: PharmaTheme.primaryGreen),
                       const SizedBox(width: 8),
-                      Text(pharma.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      Expanded(
+                        child: Text(
+                          pharma.name,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),

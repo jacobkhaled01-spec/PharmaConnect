@@ -164,7 +164,8 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('${item.medicineName} × ${item.quantity}'),
+                          Expanded(child: Text('${item.medicineName} × ${item.quantity}')),
+                          const SizedBox(width: 8),
                           Text('${item.subtotal.toStringAsFixed(0)} ريال', style: const TextStyle(fontWeight: FontWeight.bold)),
                         ],
                       ),
