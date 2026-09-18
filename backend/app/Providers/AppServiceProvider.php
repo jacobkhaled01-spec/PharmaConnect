@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Repositories\Contracts\MedicineRepositoryInterface;
+use App\Repositories\Contracts\ReservationRepositoryInterface;
+use App\Repositories\Eloquent\EloquentMedicineRepository;
+use App\Repositories\Eloquent\EloquentReservationRepository;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,7 +15,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(MedicineRepositoryInterface::class, EloquentMedicineRepository::class);
+        $this->app->bind(ReservationRepositoryInterface::class, EloquentReservationRepository::class);
     }
 
     /**

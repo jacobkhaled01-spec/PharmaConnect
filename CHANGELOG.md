@@ -2,60 +2,54 @@
 
 جميع التعديلات والخطوات البرمجية والتوثيقية لمشروع الصيدلية (خادم وعميل).
 
+## [1.8.0] - 2026-09-18
+### أضيف (Added)
+- **إنجاز المرحلة الرابعة: تطوير الخادم وبوابة المخزون والـ APIs (Phase 4 Backend & Web Portal):**
+  - **طبقة المستودعات والخدمات (Repository & Service Pattern):**
+    - بناء واجهة `MedicineRepositoryInterface` وتطبيقها `EloquentMedicineRepository` متضمناً حساب المسافات الجغرافية الدقيقة بصيغة **Haversine Formula**.
+    - بناء واجهة `ReservationRepositoryInterface` وتطبيقها `EloquentReservationRepository` لمعالجة استعادة المخزون بعد انتهاء مهلة الـ TTL.
+    - بناء خدمة البحث الجغرافي `GeoSearchService` لدعم الفلترة المكانية والترتيب حسب المسافة أو السعر.
+    - بناء خدمة الحجوزات `ReservationService` لدعم المعاملات الذرية وحماية التزامن وأقفال الصفوف (Pessimistic Locking `lockForUpdate`) وتوليد أكواد الحجز `RES-XXXXXX` واحتساب مهلة الـ 30 دقيقة.
+    - ربط المستودعات بالحاوية في `AppServiceProvider`.
+  - **واجهات برمجة التطبيقات (Centralized RESTful APIs - v1):**
+    - بناء `MedicineSearchResource` و `ReservationResource` لتوحيد بنية الاستجابات JSON.
+    - تطوير متحكمات الـ API: `AuthController`, `MedicineSearchController`, `ReservationApiController`.
+    - تفعيل 9 مسارات RESTful للبحث والحجز وإدارة التوكنات بـ Laravel Sanctum.
+  - **بوابة الويب لإدارة مخزون الصيدليات (Multi-Tenant Web Portal):**
+    - تطوير متحكم إدارة المخزون `PharmacyInventoryController` ومتحكم الجلسات `WebAuthController`.
+    - بناء الواجهات الطبية بـ Blade بالأخضر الزمردي والأبيض الصافي:
+      - `layouts/pharmacy.blade.php`: القالب الرئيسي المتجاوب.
+      - `pharmacy/inventory.blade.php`: جدول المخزون وإحصائيات الأصناف والتعديل الفوري للكميات والأسعار.
+      - `pharmacy/reservations.blade.php`: شاشة طلبات الحجز الواردة ومؤقتات العد التنازلي وتأكيد الاستلام.
+      - `auth/login.blade.php`: شاشة تسجيل دخول الصيدلية.
+  - **الاختبارات التلقائية وضمان الجودة:**
+    - كتابة اختبارات الميزات: `GeoSearchApiTest` و `ReservationConcurrencyTest` لاختبار أقفال التزامن ومنع الحجز المزدوج.
+    - اجتياز اختبارات **PHPUnit** كاملة بنسبة 100% (5 passed, 17 assertions).
+    - اجتياز فحص **Laravel Pint** بنسبة 100% بدون أي أخطاء تنسيقية.
+
 ## [1.7.0] - 2026-09-18
 ### أضيف (Added)
-- **إنجاز المرحلة الثالثة: إعداد وتهيئة بيئات العمل البرمجية (Phase 3 Environment & Codebase Setup):**
-  - **قطاع الخادم (Backend - Laravel 11):**
-    - تهيئة مشروع Laravel 11.x وتثبيت وتكوين حزمة المصادقة `Laravel Sanctum` ومسارات الـ API.
-    - إنشاء واختبار 6 ملفات Migrations جديدة مطابقة لنموذج الـ ERD المعتمد بدرجة تطبيع 3NF (جداول: `pharmacies`, `categories`, `medicines`, `pharmacy_medicines`, `reservations`, `reservation_items`) مع الفهارس المكانية والمركبة.
-    - إنشاء نماذج الـ Eloquent السبعة مع العلاقات كائنية التوجه (OOP Relationships) ودوال فحص الصلاحيات.
-    - بناء `DatabaseSeeder` بالبيانات الحية والتجريبية (صيدليات بمواقع GPS واقعية في صنعاء، تصنيفات الأدوية، 8 أصناف دوائية، والمخزون المتاح).
-    - اجتياز فحص التنسيق التلقائي بـ **Laravel Pint** بنسبة 100% واجتياز اختبارات **PHPUnit**.
-  - **قطاع عميل الهاتف (Frontend - Flutter 3.41):**
-    - تهيئة تطبيق Flutter بهيكلية المعمارية النظيفة (Clean Architecture).
-    - بناء الثيم الطبي المعتمد `PharmaTheme` (الأخضر الزمردي `#059669` والأبيض الصافي `#FFFFFF`).
-    - إنشاء ملف الثوابت `AppConstants` ومسارات الـ APIs المركزية.
-    - تحديث الشاشة الرئيسية `main.dart` ببطاقات الصيدليات وشريط البحث التفاعلي.
-    - اجتياز الفحص البرمجي التلقائي بـ `flutter analyze` (Zero Issues) واجتياز اختبارات `flutter test` (All tests passed).
+- إنجاز المرحلة الثالثة: إعداد وتهيئة بيئات العمل البرمجية (Laravel 11, Flutter 3.41, 7 Migrations, 7 Eloquent Models, Database Seeder).
 
 ## [1.6.0] - 2026-09-18
 ### أضيف (Added)
-- **إنجاز المرحلة الثانية من دورة حياة هندسة البرمجيات (Architecture & Design Phase):**
-  - إعداد واعتماد وثيقة التصميم المعماري والنمذجة وقواعد البيانات [`docs/ARCHITECTURE_AND_DESIGN.md`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/docs/ARCHITECTURE_AND_DESIGN.md) وفق أصول هندسة البرمجيات وتوثيق APA 7th.
-  - تصميم نموذج الكيانات والعلاقات (Database ERD) لـ 7 جداول مترابطة بدرجة تطبيع 3NF مع ضبط الفهارس المكانية والفريدة (Spatial & Composite Indexing).
-  - بناء مخطط الفئات كائنية التوجه (UML Class Diagram) بتطبيق مبادئ SOLID وأنماط Repository و Service Layer.
-  - بناء مخططي التتابع (Sequence Diagrams) لعمليتي: البحث المكاني اللحظي (Haversine Formula)، وعملية الحجز المؤقت وأقفال التزامن (Pessimistic Locking & TTL).
-  - بناء مخطط الأنشطة (UML Activity Diagram) لدورة حياة المخزون والحجز المؤقت.
-  - توثيق مواصفات واجهات الـ RESTful APIs وهياكل الـ JSON واستجابات الأخطاء وتدفق شاشات الويب والموبايل.
+- إنجاز المرحلة الثانية: وثيقة التصميم المعماري والنمذجة وقواعد البيانات `docs/ARCHITECTURE_AND_DESIGN.md`.
 
 ## [1.5.0] - 2026-09-18
 ### أضيف (Added)
-- **إنجاز المرحلة الأولى من دورة حياة هندسة البرمجيات (Requirements Engineering):**
-  - كتابة واعتماد وثيقة متطلبات النظام البرمجية الرسمية [`docs/SRS.md`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/docs/SRS.md) وفق معيار IEEE Std 830-1998 وتوثيق APA 7th Edition.
-  - تفصيل المتطلبات الوظيفية لوحدات: المصادقة (AUTH)، إدارة مخزون الصيدليات (INV)، البحث الجغرافي (SRCH)، الحجز المؤقت والتحكم بالتزامن (RES)، والرقابة الإشرافية (ADM).
-  - تفصيل المتطلبات غير الوظيفية للأداء والأمان والاعتمادية وسهولة الوصول وتجربة المستخدم (WCAG 2.1 AA).
-  - بناء مخطط حالات الاستخدام (UML Use Case Diagram) بصيغة Mermaid لكافة الفاعلين (المريض، الصيدلي، المشرف).
-  - بناء مصفوفة تتبع المتطلبات (Requirements Traceability Matrix - RTM).
+- إنجاز المرحلة الأولى: وثيقة مواصفات متطلبات النظام الرسمية `docs/SRS.md`.
 
 ## [1.4.0] - 2026-09-18
 ### أضيف (Added)
-- إعداد وحفظ وثيقة **خريطة طريق وخطوات العمل التنفيذية التفصيلية** في [`docs/ROADMAP.md`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/docs/ROADMAP.md).
-- تحديد المهام التفصيلية لكل مرحلة من المراحل السبع للـ SDLC وتوزيع الأدوار على أعضاء الفريق الثلاثة.
+- خريطة طريق وخطوات العمل التنفيذية التفصيلية `docs/ROADMAP.md`.
 
 ## [1.3.0] - 2026-09-18
 ### أضيف (Added)
-- بروتوكول التوثيق اللحظي بعد كل خطوة (`06_continuous_documentation.md`).
-- منظومة CI/CD واختبارات الجودة (`07_ci_cd_and_automated_testing.md`).
-- خطوط أنابيب GitHub Actions (`backend-ci.yml`, `frontend-ci.yml`).
-- قوالب مراجعة الكود (`pull_request_template.md`) والتذاكر.
-- مهارات الكود النظيف واختبارات Pint.
-- الهيكلة المادية المنعزلة وتوزيع الفريق الثلاثي.
+- منظومة CI/CD واختبارات الجودة ومراجعة الكود وهيكلة المجلدات.
 
 ## [1.2.0] - 2026-09-18
 ### أضيف (Added)
 - دستور المشروع الأصلي لمحرك Gemini: `GEMINI.md`.
-- قواعد هندسة البرمجيات الخمس الأولى.
-- تهيئة مستودع Git وربط GitHub الرسمي.
 
 ## [1.1.0] - 2026-09-18
 ### معدل (Changed)
