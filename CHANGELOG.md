@@ -2,6 +2,23 @@
 
 جميع التعديلات والخطوات البرمجية والتوثيقية لمشروع الصيدلية (خادم وعميل).
 
+## [1.2.0] - 2026-09-18
+### أضيف (Added)
+- إنشاء دستور المشروع الأصلي لمحرك Gemini: [`GEMINI.md`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/GEMINI.md).
+- تأسيس منظومة القواعد التخصصية داخل `.agents/rules/`:
+  - `01_software_engineering_sdlc.md`: معايير دورة حياة هندسة البرمجيات الكاملة والتوثيق بـ APA 7.
+  - `02_oop_and_clean_architecture.md`: معايير OOP، مبادئ SOLID، أنماط التصميم (Repository/Service)، وإعادة الاستخدام.
+  - `03_ui_ux_design_system.md`: نظام تصميم الواجهات الطبية بالأخضر والأبيض (`#059669` و `#FFFFFF`) ومعايير تجربة الاستخدام.
+  - `04_git_github_workflow.md`: بروتوكول Git Flow ومعايير الرسائل والربط بمستودع GitHub.
+  - `05_looping_engineering.md`: بروتوكول هندسة الحلقات المغلقة (Looping Engineering) للتخطيط والملاحظة والتصحيح الذاتي.
+- تأسيس المهارات التخصصية داخل `.agents/skills/`:
+  - `pharmaconnect-sdlc-workflow`: مهارة قيادة وتطبيق مراحل SDLC.
+  - `pharmaconnect-design-system`: مهارة بناء وتنسيق الواجهات الطبية الخضراء والبيضاء.
+- إنشاء ملف التجاهل الشامل: [`.gitignore`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/.gitignore).
+- تهيئة مستودع Git محلياً وتسمية الفرع الأساسي `main`.
+- ربط المستودع السحابي الرسمي: `https://github.com/jacobkhaled01-spec/PharmaConnect.git`.
+- تنفيذ أول حفظ معتمد (Initial Commit) للمشروع.
+
 ## [1.1.0] - 2026-09-18
 ### معدل (Changed)
 - تحديث المعمارية البرمجية لتصبح **نظاماً موزعاً متعدد الصيدليات (Multi-Pharmacy / Multi-Tenant System)**.
