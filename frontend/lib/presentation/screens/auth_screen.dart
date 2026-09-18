@@ -46,7 +46,7 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
 
-    bool success = false;
+    AuthResult result;
     if (_isRegistering) {
       final name = _nameController.text.trim();
       final phone = _phoneController.text.trim();
@@ -57,21 +57,21 @@ class _AuthScreenState extends State<AuthScreen> {
         });
         return;
       }
-      success = await ApiService().register(
+      result = await ApiService().register(
         name: name,
         email: email,
         password: password,
         phone: phone,
       );
     } else {
-      success = await ApiService().login(email, password);
+      result = await ApiService().login(email, password);
     }
 
     setState(() {
       _isLoading = false;
     });
 
-    if (success) {
+    if (result.success) {
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -80,7 +80,7 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } else {
       setState(() {
-        _errorMessage = 'بيانات الدخول غير صحيحة أو تعذر الاتصال بالخادم.';
+        _errorMessage = result.errorMessage ?? 'بيانات الدخول غير صحيحة أو تعذر الاتصال بالخادم.';
       });
     }
   }
@@ -329,6 +329,37 @@ class _AuthScreenState extends State<AuthScreen> {
                                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                 ),
                         ),
+                        if (!_isRegistering) ...[
+                          const SizedBox(height: 12),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () {
+                              _emailController.text = 'patient@pharmaconnect.ye';
+                              _passwordController.text = 'password123';
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.touch_app_outlined, size: 15, color: PharmaTheme.primaryGreen),
+                                  SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'تجربة سريعة: patient@pharmaconnect.ye (اضغط للتعبئة)',
+                                      style: TextStyle(color: PharmaTheme.textMuted, fontSize: 11),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

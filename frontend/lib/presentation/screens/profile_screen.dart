@@ -45,7 +45,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    bool success = false;
+    AuthResult result;
     if (_isRegistering) {
       final name = _nameController.text.trim();
       final phone = _phoneController.text.trim();
@@ -56,21 +56,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
         return;
       }
-      success = await ApiService().register(
+      result = await ApiService().register(
         name: name,
         email: email,
         password: password,
         phone: phone,
       );
     } else {
-      success = await ApiService().login(email, password);
+      result = await ApiService().login(email, password);
     }
 
     setState(() {
       _isLoading = false;
     });
 
-    if (success) {
+    if (result.success) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -81,7 +81,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } else {
       setState(() {
-        _errorMessage = 'تعذر المصادقة. يرجى التحقق من البيانات المدخلة.';
+        _errorMessage = result.errorMessage ?? 'تعذر المصادقة. يرجى التحقق من البيانات المدخلة.';
       });
     }
   }

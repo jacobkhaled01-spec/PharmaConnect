@@ -91,5 +91,13 @@ void main() {
       final augItems = await api.searchMedicines(query: 'Augmentin');
       expect(augItems.any((i) => i.medicine.tradeName.contains('Augmentin')), true);
     });
+
+    test('ApiService login fails with invalid credentials and does not authenticate', () async {
+      final api = ApiService();
+      final result = await api.login('nonexistent@example.com', 'wrongpassword');
+      expect(result.success, false);
+      expect(api.isAuthenticated, false);
+      expect(result.errorMessage, isNotNull);
+    });
   });
 }

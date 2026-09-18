@@ -5,6 +5,18 @@ import '../../data/models/reservation_model.dart';
 import '../../data/models/user_model.dart';
 import '../constants/app_constants.dart';
 
+class AuthResult {
+  final bool success;
+  final String? errorMessage;
+  final UserModel? user;
+
+  AuthResult({
+    required this.success,
+    this.errorMessage,
+    this.user,
+  });
+}
+
 class ApiService {
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
@@ -26,8 +38,8 @@ class ApiService {
         if (_authToken != null) 'Authorization': 'Bearer $_authToken',
       };
 
-  /// تسجيل الدخول للعميل
-  Future<bool> login(String email, String password) async {
+  /// تسجيل الدخول للعميل مع التحقق الصارم من الخادم المركزي وقاعدة البيانات
+  Future<AuthResult> login(String email, String password) async {
     try {
       final uri = Uri.parse('${AppConstants.baseUrl}${AppConstants.authLoginEndpoint}');
       final response = await http
@@ -36,32 +48,42 @@ class ApiService {
             headers: _headers,
             body: json.encode({'email': email, 'password': password}),
           )
-          .timeout(const Duration(seconds: 4));
+          .timeout(const Duration(seconds: 5));
+
+      final Map<String, dynamic> body = json.decode(utf8.decode(response.bodyBytes));
 
       if (response.statusCode == 200) {
-        final body = json.decode(response.body);
         _authToken = body['data']['token'];
         _currentUser = UserModel.fromJson(body['data']['user']);
-        return true;
+        return AuthResult(success: true, user: _currentUser);
+      } else if (response.statusCode == 422) {
+        String msg = body['message'] ?? 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+        if (body['errors'] != null && body['errors'] is Map) {
+          final errorsMap = body['errors'] as Map;
+          if (errorsMap.isNotEmpty) {
+            final firstVal = errorsMap.values.first;
+            if (firstVal is List && firstVal.isNotEmpty) {
+              msg = firstVal.first.toString();
+            }
+          }
+        }
+        return AuthResult(success: false, errorMessage: msg);
+      } else {
+        return AuthResult(
+          success: false,
+          errorMessage: body['message'] ?? 'فشل تسجيل الدخول (${response.statusCode})',
+        );
       }
-    } catch (_) {}
-
-    // حساب تجريبي محلي سريع في حال عدم توفر اتصال بالخادم
-    if (email.contains('@')) {
-      _currentUser = UserModel(
-        id: 1,
-        name: 'يعقوب خالد',
-        email: email,
-        phone: '+967 771 234 567',
-        role: 'patient',
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        errorMessage: 'تعذر الاتصال بالخادم المركزي (127.0.0.1:8000). يرجى التأكد من تشغيله.',
       );
-      return true;
     }
-    return false;
   }
 
-  /// إنشاء حساب مريض جديد
-  Future<bool> register({
+  /// إنشاء حساب مريض جديد مع التحقق في الخادم وقاعدة البيانات
+  Future<AuthResult> register({
     required String name,
     required String email,
     required String password,
@@ -80,28 +102,48 @@ class ApiService {
               if (phone != null && phone.isNotEmpty) 'phone': phone,
             }),
           )
-          .timeout(const Duration(seconds: 4));
+          .timeout(const Duration(seconds: 5));
+
+      final Map<String, dynamic> body = json.decode(utf8.decode(response.bodyBytes));
 
       if (response.statusCode == 201) {
-        final body = json.decode(response.body);
         _authToken = body['data']['token'];
         _currentUser = UserModel.fromJson(body['data']['user']);
-        return true;
+        return AuthResult(success: true, user: _currentUser);
+      } else if (response.statusCode == 422) {
+        String msg = body['message'] ?? 'البيانات المدخلة غير صحيحة.';
+        if (body['errors'] != null && body['errors'] is Map) {
+          final errorsMap = body['errors'] as Map;
+          if (errorsMap.isNotEmpty) {
+            final firstVal = errorsMap.values.first;
+            if (firstVal is List && firstVal.isNotEmpty) {
+              msg = firstVal.first.toString();
+            }
+          }
+        }
+        return AuthResult(success: false, errorMessage: msg);
+      } else {
+        return AuthResult(
+          success: false,
+          errorMessage: body['message'] ?? 'تعذر إنشاء الحساب (${response.statusCode})',
+        );
       }
-    } catch (_) {}
-
-    _currentUser = UserModel(
-      id: 2,
-      name: name,
-      email: email,
-      phone: phone ?? '+967 770 000 000',
-      role: 'patient',
-    );
-    return true;
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        errorMessage: 'تعذر الاتصال بالخادم المركزي. يرجى التأكد من تشغيله.',
+      );
+    }
   }
 
   /// تسجيل الخروج
-  void logout() {
+  Future<void> logout() async {
+    try {
+      if (_authToken != null) {
+        final uri = Uri.parse('${AppConstants.baseUrl}/auth/logout');
+        await http.post(uri, headers: _headers).timeout(const Duration(seconds: 3));
+      }
+    } catch (_) {}
     _authToken = null;
     _currentUser = null;
   }

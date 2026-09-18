@@ -18,9 +18,17 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'phone' => 'nullable|string|max:20|unique:users',
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'phone' => 'nullable|string|max:20|unique:users,phone',
             'password' => 'required|string|min:6',
+        ], [
+            'name.required' => 'يرجى إدخال اسم المريض الكامل.',
+            'email.required' => 'يرجى إدخال عنوان البريد الإلكتروني.',
+            'email.email' => 'صيغة البريد الإلكتروني غير صحيحة.',
+            'email.unique' => 'البريد الإلكتروني هذا مسجل مسبقاً في النظام.',
+            'phone.unique' => 'رقم الهاتف هذا مسجل مسبقاً لمريض آخر.',
+            'password.required' => 'يرجى إدخال كلمة المرور.',
+            'password.min' => 'يجب ألا تقل كلمة المرور عن 6 أحرف أو أرقام.',
         ]);
 
         $user = User::create([
@@ -57,6 +65,10 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|string|email',
             'password' => 'required|string',
+        ], [
+            'email.required' => 'يرجى إدخال البريد الإلكتروني.',
+            'email.email' => 'صيغة البريد الإلكتروني غير صحيحة.',
+            'password.required' => 'يرجى إدخال كلمة المرور.',
         ]);
 
         $user = User::where('email', $request->email)->first();
