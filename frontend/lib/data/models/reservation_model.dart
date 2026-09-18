@@ -73,6 +73,7 @@ class ReservationItemModel {
   final int quantity;
   final double unitPrice;
   final double subtotal;
+  final String? imageUrl;
 
   ReservationItemModel({
     required this.medicineName,
@@ -80,6 +81,7 @@ class ReservationItemModel {
     required this.quantity,
     required this.unitPrice,
     required this.subtotal,
+    this.imageUrl,
   });
 
   factory ReservationItemModel.fromJson(Map<String, dynamic> json) {
@@ -89,6 +91,7 @@ class ReservationItemModel {
       quantity: json['quantity'] ?? 1,
       unitPrice: (json['unit_price'] as num?)?.toDouble() ?? 0.0,
       subtotal: (json['subtotal'] as num?)?.toDouble() ?? 0.0,
+      imageUrl: json['image_url'],
     );
   }
 }

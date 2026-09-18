@@ -65,6 +65,7 @@ class MedicineInfo {
   final String? manufacturer;
   final String? category;
   final bool isPrescriptionRequired;
+  final String? imageUrl;
 
   MedicineInfo({
     required this.id,
@@ -76,6 +77,7 @@ class MedicineInfo {
     this.manufacturer,
     this.category,
     this.isPrescriptionRequired = false,
+    this.imageUrl,
   });
 
   factory MedicineInfo.fromJson(Map<String, dynamic> json) {
@@ -89,6 +91,7 @@ class MedicineInfo {
       manufacturer: json['manufacturer'],
       category: json['category'],
       isPrescriptionRequired: json['is_prescription_required'] ?? false,
+      imageUrl: json['image_url'],
     );
   }
 }

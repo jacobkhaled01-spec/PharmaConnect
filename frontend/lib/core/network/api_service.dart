@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../data/models/medicine_search_model.dart';
 import '../../data/models/reservation_model.dart';
@@ -17,7 +19,7 @@ class AuthResult {
   });
 }
 
-class ApiService {
+class ApiService extends ChangeNotifier {
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal();
@@ -266,6 +268,7 @@ class ApiService {
             _cachedReservations.insert(0, item);
           }
         }
+        notifyListeners();
         return _cachedReservations;
       }
     } catch (_) {
@@ -334,6 +337,7 @@ class ApiService {
         final created = ReservationModel.fromJson(body['data']);
         _cachedReservations.insert(0, created);
         _stockDeductions[stockId] = (_stockDeductions[stockId] ?? 0) + quantity;
+        notifyListeners();
         return created;
       }
     } catch (_) {
@@ -373,6 +377,7 @@ class ApiService {
     );
 
     _cachedReservations.insert(0, fallbackRes);
+    notifyListeners();
     return fallbackRes;
   }
 

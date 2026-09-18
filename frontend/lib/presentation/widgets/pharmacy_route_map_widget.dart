@@ -113,46 +113,46 @@ class _PharmacyRouteMapWidgetState extends State<PharmacyRouteMapWidget> {
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF064E3B) : PharmaTheme.mintAccent,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Icon(
-                            Icons.map_rounded,
-                            color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark,
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'الخريطة الملاحية الحقيقية',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: textMainColor,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _locationService.locationName,
-                              style: TextStyle(
-                                color: textMutedColor,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF064E3B) : PharmaTheme.mintAccent,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        Icons.map_rounded,
+                        color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark,
+                        size: 22,
+                      ),
                     ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'الخريطة الملاحية الحقيقية',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: textMainColor,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _locationService.locationName,
+                            style: TextStyle(
+                              color: textMutedColor,
+                              fontSize: 11,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     // شارة المسافة المحسوبة مع زر التحديث
                     InkWell(
                       onTap: isLocating ? null : () => _locationService.fetchCurrentLocation(),
@@ -181,13 +181,13 @@ class _PharmacyRouteMapWidgetState extends State<PharmacyRouteMapWidget> {
                                 size: 14,
                                 color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark,
                               ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 5),
                             Text(
                               '$distanceKm كم',
                               style: TextStyle(
                                 fontWeight: FontWeight.w900,
                                 color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark,
-                                fontSize: 13,
+                                fontSize: 12,
                               ),
                             ),
                           ],
