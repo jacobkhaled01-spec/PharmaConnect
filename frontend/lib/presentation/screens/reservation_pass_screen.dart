@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/network/api_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/reservation_model.dart';
@@ -26,12 +28,10 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
     _reservation = widget.reservation;
     _remainingSeconds = _reservation.currentRemainingSeconds;
 
-    // تشغيل العداد التنازلي الحقيقي فقط إذا كان الحجز نشطاً بانتظار الاستلام
     if (_reservation.status == 'pending' && _remainingSeconds > 0) {
       _startTimer();
     }
 
-    // التحقق التلقائي من حالة الحجز الحية في الخادم
     _checkServerStatus();
   }
 
@@ -78,63 +78,69 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
+  void _copyCodeToClipboard(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: _reservation.reservationCode));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text('تم نسخ رمز الحجز (${_reservation.reservationCode}) إلى الحافظة'),
+          ],
+        ),
+        backgroundColor: PharmaTheme.primaryGreenDark,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _callPharmacy(String phone) async {
+    final cleanPhone = phone.replaceAll(RegExp(r'\s+'), '');
+    final uri = Uri.parse('tel:$cleanPhone');
+    try {
+      if (!await launchUrl(uri)) {
+        // Fallback
+      }
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? PharmaTheme.darkSurface : Colors.white;
     final borderColor = isDark ? PharmaTheme.darkBorder : const Color(0xFFE2E8F0);
+    final textMutedColor = isDark ? PharmaTheme.darkTextMuted : PharmaTheme.textMuted;
+    final textMainColor = isDark ? PharmaTheme.darkTextMain : PharmaTheme.textMain;
 
     final status = _reservation.status;
     final isCompleted = status == 'completed';
     final isCancelled = status == 'cancelled';
     final isExpired = _reservation.isCurrentlyExpired || (!isCompleted && !isCancelled && _remainingSeconds <= 0);
 
-    // تجهيز أيقونة وألوان الحالة بدقة
-    final Color iconBg;
-    final Color iconColor;
+    // تجهيز أيقونة وألوان الحالة بدقة طبية راقية
+    final Color statusColor;
+    final String statusBadgeTitle;
     final IconData statusIcon;
-    final String instructionText;
-    final String statusSectionTitle;
-    final String statusBadgeText;
-    final Color statusBadgeBg;
-    final Color statusBadgeTextColor;
 
     if (isCompleted) {
-      iconBg = isDark ? const Color(0xFF064E3B) : const Color(0xFFDCFCE7);
-      iconColor = isDark ? const Color(0xFF34D399) : const Color(0xFF15803D);
-      statusIcon = Icons.check_circle_rounded;
-      instructionText = 'تم استلام الدواء وتأكيد العملية بنجاح من الصيدلية ✓';
-      statusSectionTitle = 'حالة الطلب والتسليم';
-      statusBadgeText = 'تم التسليم والاستلام بنجاح ✓';
-      statusBadgeBg = isDark ? const Color(0xFF064E3B).withAlpha(180) : const Color(0xFFDCFCE7);
-      statusBadgeTextColor = isDark ? const Color(0xFF34D399) : const Color(0xFF15803D);
+      statusColor = const Color(0xFF10B981);
+      statusBadgeTitle = 'تم استلام وتأكيد الطلب بنجاح ✓';
+      statusIcon = Icons.task_alt_rounded;
     } else if (isCancelled) {
-      iconBg = isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2);
-      iconColor = isDark ? const Color(0xFFF87171) : PharmaTheme.statusDanger;
-      statusIcon = Icons.cancel_rounded;
-      instructionText = 'تم إلغاء هذا الحجز مسبقاً وفك حجز المخزون';
-      statusSectionTitle = 'حالة الحجز';
-      statusBadgeText = 'تم إلغاء الحجز';
-      statusBadgeBg = isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2);
-      statusBadgeTextColor = isDark ? const Color(0xFFF87171) : PharmaTheme.statusDanger;
+      statusColor = PharmaTheme.statusDanger;
+      statusBadgeTitle = 'الحجز ملغي وتم فك حجز المخزون';
+      statusIcon = Icons.cancel_outlined;
     } else if (isExpired) {
-      iconBg = isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2);
-      iconColor = isDark ? const Color(0xFFF87171) : PharmaTheme.statusDanger;
-      statusIcon = Icons.timer_off_rounded;
-      instructionText = 'انتهت المهلة المحددة للاستلام وتم فك حجز المخزون آلياً';
-      statusSectionTitle = 'انتهت مهلة الحجز';
-      statusBadgeText = 'ملغي آلياً (انتهت الصلاحية)';
-      statusBadgeBg = isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2);
-      statusBadgeTextColor = isDark ? const Color(0xFFF87171) : PharmaTheme.statusDanger;
+      statusColor = PharmaTheme.statusDanger;
+      statusBadgeTitle = 'انتهت صلاحية مهلة الاستلام آلياً';
+      statusIcon = Icons.hourglass_disabled_rounded;
     } else {
-      iconBg = isDark ? const Color(0xFF064E3B) : PharmaTheme.mintBackground;
-      iconColor = isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreen;
-      statusIcon = Icons.qr_code_2_rounded;
-      instructionText = 'أظهر هذا الرمز للصيدلي عند الاستلام';
-      statusSectionTitle = 'المهلة الزمنية المتبقية للاستلام (TTL)';
-      statusBadgeText = _formatTime(_remainingSeconds);
-      statusBadgeBg = isDark ? const Color(0xFF064E3B).withAlpha(150) : PharmaTheme.mintAccent;
-      statusBadgeTextColor = isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenDark;
+      statusColor = PharmaTheme.primaryGreen;
+      statusBadgeTitle = 'تذكرة حجز دوائي صالحة ونشطة';
+      statusIcon = Icons.verified_rounded;
     }
 
     return Scaffold(
@@ -161,6 +167,8 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
                               ? 'الحجز مؤكد ومكتمل التسليم بنجاح ✓'
                               : 'تم تحديث حالة الحجز من الخادم المركزي.',
                         ),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         duration: const Duration(seconds: 2),
                       ),
                     );
@@ -169,168 +177,469 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 16.0),
         child: Column(
           children: [
-            // بطاقة التذكرة الرئيسية
+            // ==================== بطاقة التذكرة الطبية (Boarding Pass) ====================
             Container(
-              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: cardBg,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: borderColor),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(isDark ? 30 : 8),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
+                    color: Colors.black.withAlpha(isDark ? 50 : 12),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
               child: Column(
                 children: [
-                  // رمز الاستجابة والشعار
+                  // --- القسم العلوي: شارة الحالة وتاريخ الحجز ---
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                     decoration: BoxDecoration(
-                      color: iconBg,
-                      borderRadius: BorderRadius.circular(20),
+                      color: isDark
+                          ? statusColor.withAlpha(35)
+                          : statusColor.withAlpha(20),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                     ),
-                    child: Icon(
-                      statusIcon,
-                      size: 70,
-                      color: iconColor,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _reservation.reservationCode,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    instructionText,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
-                      fontSize: 13,
-                    ),
-                  ),
-                  Divider(height: 36, color: borderColor),
-
-                  // مؤقت العد التنازلي أو حالة الحجز المؤكدة
-                  Text(
-                    statusSectionTitle,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: statusBadgeBg,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Text(
-                      statusBadgeText,
-                      style: TextStyle(
-                        fontSize: isCompleted || isExpired || isCancelled ? 18 : 24,
-                        fontWeight: FontWeight.w900,
-                        color: statusBadgeTextColor,
-                      ),
-                    ),
-                  ),
-                  Divider(height: 36, color: borderColor),
-
-                  // تفاصيل الصيدلية
-                  Row(
-                    children: [
-                      const Icon(Icons.local_pharmacy, color: PharmaTheme.primaryGreen, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _reservation.pharmacy.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: statusColor,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: statusColor.withAlpha(150),
+                                    blurRadius: 6,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              statusBadgeTitle,
+                              style: TextStyle(
+                                color: statusColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        Icon(statusIcon, color: statusColor, size: 20),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _reservation.pharmacy.address,
-                          style: TextStyle(
-                            color: isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted,
-                            fontSize: 13,
+
+                  // --- قسم الباركود / QR كود الموثق ---
+                  Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      children: [
+                        // إطار الماسح الضوئي الطبي للـ QR
+                        Container(
+                          width: 150,
+                          height: 150,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isDark ? PharmaTheme.darkNeonGreen.withAlpha(80) : PharmaTheme.primaryGreen.withAlpha(80),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: (isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreen).withAlpha(25),
+                                blurRadius: 16,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Icon(
+                                Icons.qr_code_2_rounded,
+                                size: 110,
+                                color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark,
+                              ),
+                              // زوايا الاستهداف البصري
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: _buildCornerTarget(isDark, true, true),
+                              ),
+                              Positioned(
+                                top: 0,
+                                left: 0,
+                                child: _buildCornerTarget(isDark, true, false),
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: _buildCornerTarget(isDark, false, true),
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                left: 0,
+                                child: _buildCornerTarget(isDark, false, false),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  Divider(height: 36, color: borderColor),
+                        const SizedBox(height: 18),
 
-                  // تفاصيل الأصناف
-                  ..._reservation.items.map(
-                    (item) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(child: Text('${item.medicineName} × ${item.quantity}')),
-                          const SizedBox(width: 8),
-                          Text('${item.subtotal.toStringAsFixed(0)} ريال', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        ],
-                      ),
+                        // رمز الحجز مع زر النسخ السريع
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _reservation.reservationCode,
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 3,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              InkWell(
+                                onTap: () => _copyCodeToClipboard(context),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: (isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreen).withAlpha(30),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.copy_rounded,
+                                    size: 16,
+                                    color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'أظهر هذا الرمز أو الكود للصيدلي لتأكيد الاستلام',
+                          style: TextStyle(color: textMutedColor, fontSize: 12),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // --- مؤقت المهلة الزمنية المتبقية (TTL Countdown Pill) ---
+                        if (!isCompleted && !isCancelled)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: isExpired
+                                  ? (isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2))
+                                  : (isDark ? const Color(0xFF064E3B).withAlpha(120) : PharmaTheme.mintBackground),
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(
+                                color: isExpired
+                                    ? PharmaTheme.statusDanger.withAlpha(100)
+                                    : (isDark ? PharmaTheme.darkNeonGreen.withAlpha(80) : PharmaTheme.primaryGreen.withAlpha(80)),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isExpired ? Icons.timer_off_rounded : Icons.alarm_rounded,
+                                  size: 20,
+                                  color: isExpired
+                                      ? PharmaTheme.statusDanger
+                                      : (isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  isExpired ? 'انتهت المهلة الزمنية' : 'المتبقي: ${_formatTime(_remainingSeconds)} دقيقة',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 16,
+                                    color: isExpired
+                                        ? PharmaTheme.statusDanger
+                                        : (isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                  const Divider(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('المبلغ الإجمالي:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      Text(
-                        '${_reservation.totalAmount.toStringAsFixed(0)} ريال',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: PharmaTheme.primaryGreen,
+
+                  // --- خط التمزيق والتثقيب التذكاري الفاخر (Perforated Tear Line) ---
+                  _buildPerforatedDivider(isDark),
+
+                  // --- القسم السفلي: تفاصيل الصيدلية والأصناف ---
+                  Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // بطاقة الصيدلية
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: PharmaTheme.primaryGreen.withAlpha(30),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.local_pharmacy_rounded, color: PharmaTheme.primaryGreen, size: 22),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _reservation.pharmacy.name,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: textMainColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _reservation.pharmacy.address,
+                                      style: TextStyle(color: textMutedColor, fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (_reservation.pharmacy.phone.isNotEmpty)
+                                IconButton(
+                                  icon: const Icon(Icons.phone_in_talk_rounded, color: PharmaTheme.primaryGreen),
+                                  tooltip: 'اتصال بالصيدلية',
+                                  onPressed: () => _callPharmacy(_reservation.pharmacy.phone),
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 20),
+
+                        // قائمة الأصناف
+                        Text(
+                          'تفاصيل الأصناف المحجوزة:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: textMainColor,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ..._reservation.items.map(
+                          (item) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6.0),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9)),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.medication_rounded, size: 16, color: PharmaTheme.primaryGreen),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.medicineName,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: textMainColor,
+                                        ),
+                                      ),
+                                      Text(
+                                        'الكمية: ${item.quantity} عبوات',
+                                        style: TextStyle(fontSize: 12, color: textMutedColor),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  '${item.subtotal.toStringAsFixed(0)} ريال',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 14,
+                                    color: textMainColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Divider(height: 28, color: borderColor),
+
+                        // الإجمالي النهائي
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'المبلغ الإجمالي للاستلام:',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textMainColor),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: (isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreen).withAlpha(20),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: (isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreen).withAlpha(60),
+                                ),
+                              ),
+                              child: Text(
+                                '${_reservation.totalAmount.toStringAsFixed(0)} ريال',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
-            // خريطة المسار المباشر والملاحة للوصول للصيدلية
+            // ==================== خريطة المسار المباشر الحقيقية ====================
             PharmacyRouteMapWidget(
               pharmacy: _reservation.pharmacy,
-              distanceKm: 1.2,
+              initialDistanceKm: 1.2,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
-            // زر العودة للرئيسية
-            ElevatedButton(
+            // زر العودة والإنهاء
+            ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
+                backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                foregroundColor: textMainColor,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               onPressed: () => Navigator.pop(context),
-              child: const Text('العودة لشاشة البحث'),
+              icon: const Icon(Icons.arrow_back_rounded, size: 18),
+              label: const Text('العودة للبحث والأدوية', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
+            const SizedBox(height: 20),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildCornerTarget(bool isDark, bool isTop, bool isRight) {
+    final color = isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreen;
+    return Container(
+      width: 14,
+      height: 14,
+      decoration: BoxDecoration(
+        border: Border(
+          top: isTop ? BorderSide(color: color, width: 3) : BorderSide.none,
+          bottom: !isTop ? BorderSide(color: color, width: 3) : BorderSide.none,
+          right: isRight ? BorderSide(color: color, width: 3) : BorderSide.none,
+          left: !isRight ? BorderSide(color: color, width: 3) : BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPerforatedDivider(bool isDark) {
+    final bgScaffold = isDark ? PharmaTheme.darkBackground : PharmaTheme.backgroundLight;
+    final borderColor = isDark ? PharmaTheme.darkBorder : const Color(0xFFCBD5E1);
+
+    return SizedBox(
+      height: 26,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // خط منقط (Dashed Line)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const dashWidth = 6.0;
+              const dashSpace = 4.0;
+              final dashCount = (constraints.maxWidth / (dashWidth + dashSpace)).floor();
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(dashCount, (_) {
+                  return Container(
+                    width: dashWidth,
+                    height: 1.5,
+                    margin: const EdgeInsets.symmetric(horizontal: dashSpace / 2),
+                    color: borderColor,
+                  );
+                }),
+              );
+            },
+          ),
+          // قَطع نصف دائري على اليمين (Right Notch)
+          Positioned(
+            right: -13,
+            child: Container(
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                color: bgScaffold,
+                shape: BoxShape.circle,
+                border: Border.all(color: borderColor),
+              ),
+            ),
+          ),
+          // قَطع نصف دائري على اليسار (Left Notch)
+          Positioned(
+            left: -13,
+            child: Container(
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                color: bgScaffold,
+                shape: BoxShape.circle,
+                border: Border.all(color: borderColor),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

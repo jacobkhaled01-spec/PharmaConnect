@@ -1,26 +1,46 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/services/location_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/medicine_search_model.dart';
 
-class PharmacyRouteMapWidget extends StatelessWidget {
+class PharmacyRouteMapWidget extends StatefulWidget {
   final PharmacyInfo pharmacy;
-  final double distanceKm;
-  final double userLat;
-  final double userLng;
+  final double? distanceKm;
+  final double? initialDistanceKm;
 
   const PharmacyRouteMapWidget({
     super.key,
     required this.pharmacy,
-    this.distanceKm = 1.2,
-    this.userLat = 15.3300,
-    this.userLng = 44.1900,
+    this.distanceKm,
+    this.initialDistanceKm,
   });
 
-  Future<void> _openGoogleMapsRoute() async {
-    final destLat = pharmacy.latitude ?? 15.32685;
-    final destLng = pharmacy.longitude ?? 44.19512;
-    
+  @override
+  State<PharmacyRouteMapWidget> createState() => _PharmacyRouteMapWidgetState();
+}
+
+class _PharmacyRouteMapWidgetState extends State<PharmacyRouteMapWidget> {
+  final LocationService _locationService = LocationService();
+
+  @override
+  void initState() {
+    super.initState();
+    // جلب موقع العميل الفعلي فور فتح البطاقة
+    _locationService.fetchCurrentLocation();
+  }
+
+  // تحويل إحداثيات خطوط الطول والعرض إلى أرقام مربعات الخرائط الحقيقية (Web Mercator Slippy Tiles)
+  int _lon2tile(double lon, int zoom) =>
+      ((lon + 180.0) / 360.0 * (1 << zoom)).floor();
+
+  int _lat2tile(double lat, int zoom) {
+    final latRad = lat * pi / 180.0;
+    return ((1.0 - (log(tan(latRad) + 1.0 / cos(latRad)) / pi)) / 2.0 * (1 << zoom)).floor();
+  }
+
+  Future<void> _openGoogleMapsRoute(double userLat, double userLng, double destLat, double destLng) async {
     final uri = Uri.parse(
       'https://www.google.com/maps/dir/?api=1&origin=$userLat,$userLng&destination=$destLat,$destLng&travelmode=driving',
     );
@@ -30,295 +50,499 @@ class PharmacyRouteMapWidget extends StatelessWidget {
         await launchUrl(uri, mode: LaunchMode.platformDefault);
       }
     } catch (_) {
-      // Fallback
+      // تجاهل الخطأ في حالة تعذر تشغيل التطبيق الخارجي
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final drivingMinutes = (distanceKm * 3.5).clamp(2, 60).ceil();
-    final walkingMinutes = (distanceKm * 12).clamp(5, 180).ceil();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? PharmaTheme.darkSurface : Colors.white;
+    final borderColor = isDark ? PharmaTheme.darkBorder : const Color(0xFFE2E8F0);
+    final textMutedColor = isDark ? PharmaTheme.darkTextMuted : PharmaTheme.textMuted;
+    final textMainColor = isDark ? PharmaTheme.darkTextMain : PharmaTheme.textMain;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(6),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    final destLat = widget.pharmacy.latitude ?? 15.32685;
+    final destLng = widget.pharmacy.longitude ?? 44.19512;
+
+    return ListenableBuilder(
+      listenable: _locationService,
+      builder: (context, _) {
+        final userLat = _locationService.userLat;
+        final userLng = _locationService.userLng;
+        final isLocating = _locationService.isLocating;
+
+        // حساب المسافة الحقيقية الدقيقة
+        final calculatedDist = _locationService.calculateDistance(destLat, destLng);
+        final distanceKm = calculatedDist > 0 ? calculatedDist : (widget.distanceKm ?? widget.initialDistanceKm ?? 1.2);
+
+        final drivingMinutes = (distanceKm * 3.5).clamp(2, 60).ceil();
+        final walkingMinutes = (distanceKm * 12).clamp(5, 180).ceil();
+
+        // حساب بلاطات الخريطة الحقيقية لصنعاء عند مستوى تقريب 15
+        const zoom = 15;
+        final tileX = _lon2tile(destLng, zoom);
+        final tileY = _lat2tile(destLat, zoom);
+
+        // روابط بلاطات الخرائط الحقيقية العالمية المفتوحة (CartoDB Voyager للنهاري، Dark Matter لليلي)
+        final tileUrl1 = isDark
+            ? 'https://basemaps.cartocdn.com/rastertiles/dark_all/$zoom/$tileX/$tileY.png'
+            : 'https://basemaps.cartocdn.com/rastertiles/voyager/$zoom/$tileX/$tileY.png';
+        
+        final tileUrl2 = isDark
+            ? 'https://basemaps.cartocdn.com/rastertiles/dark_all/$zoom/${tileX + 1}/$tileY.png'
+            : 'https://basemaps.cartocdn.com/rastertiles/voyager/$zoom/${tileX + 1}/$tileY.png';
+
+        return Container(
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(isDark ? 35 : 10),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // رأس الخريطة
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // رأس الخريطة مع زر تحديد الموقع الفعلي
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: PharmaTheme.mintAccent,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.map_outlined, color: PharmaTheme.primaryGreenDark, size: 20),
-                    ),
-                    const SizedBox(width: 10),
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
                       children: [
-                        Text(
-                          'خريطة المسار المباشر',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF064E3B) : PharmaTheme.mintAccent,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(
+                            Icons.map_rounded,
+                            color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark,
+                            size: 22,
+                          ),
                         ),
-                        Text(
-                          'من موقعك الحالي إلى الصيدلية',
-                          style: TextStyle(color: PharmaTheme.textMuted, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: PharmaTheme.mintBackground,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: PharmaTheme.mintAccent),
-                  ),
-                  child: Text(
-                    '$distanceKm كم',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: PharmaTheme.primaryGreenDark, fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // لوحة رسم الخريطة التفاعلية مع المسار
-          Container(
-            height: 170,
-            width: double.infinity,
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFCBD5E1)),
-            ),
-            child: Stack(
-              children: [
-                // رسم الطرق والمسار المنحني
-                CustomPaint(
-                  size: const Size(double.infinity, 170),
-                  painter: _RouteMapPainter(),
-                ),
-
-                // نقطة موقع المريض الحالي
-                Positioned(
-                  bottom: 24,
-                  right: 24,
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade600,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.blue.shade200,
-                              blurRadius: 8,
-                              spreadRadius: 2,
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'الخريطة الملاحية الحقيقية',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: textMainColor,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _locationService.locationName,
+                              style: TextStyle(
+                                color: textMutedColor,
+                                fontSize: 12,
+                              ),
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.my_location, color: Colors.white, size: 18),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue.shade300),
-                        ),
-                        child: const Text('موقعك الحالي', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // بطاقة وقت الوصول في منتصف المسار
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
+                      ],
+                    ),
+                    // شارة المسافة المحسوبة مع زر التحديث
+                    InkWell(
+                      onTap: isLocating ? null : () => _locationService.fetchCurrentLocation(),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: PharmaTheme.primaryGreen),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(15),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.directions_car, size: 16, color: PharmaTheme.primaryGreen),
-                        const SizedBox(width: 4),
-                        Text(
-                          '~ $drivingMinutes دقائق بالسيارة',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: PharmaTheme.primaryGreenDark),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // نقطة موقع الصيدلية
-                Positioned(
-                  top: 20,
-                  left: 24,
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: PharmaTheme.primaryGreen,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: PharmaTheme.primaryGreen.withAlpha(80),
-                              blurRadius: 8,
-                              spreadRadius: 2,
+                          color: isDark ? const Color(0xFF064E3B).withAlpha(150) : PharmaTheme.mintBackground,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isDark ? PharmaTheme.darkNeonGreen.withAlpha(100) : PharmaTheme.mintAccent,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (isLocating)
+                              const SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            else
+                              Icon(
+                                Icons.my_location_rounded,
+                                size: 14,
+                                color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark,
+                              ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '$distanceKm كم',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark,
+                                fontSize: 13,
+                              ),
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.local_pharmacy, color: Colors.white, size: 18),
                       ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: PharmaTheme.primaryGreen),
-                        ),
-                        child: Text(
-                          pharmacy.name,
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: PharmaTheme.primaryGreenDark),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // تفاصيل المسار والتقديرات
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildQuickMetric(Icons.directions_car, '$drivingMinutes دقائق', 'بالسيارة'),
-                    _buildQuickMetric(Icons.directions_walk, '$walkingMinutes دقيقة', 'مشياً'),
-                    _buildQuickMetric(Icons.straighten, '$distanceKm كم', 'المسافة المباشرة'),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 46),
-                    backgroundColor: const Color(0xFF0284C7),
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: _openGoogleMapsRoute,
-                  icon: const Icon(Icons.navigation_outlined, size: 18),
-                  label: const Text('فتح المسار والملاحة الحية (Google Maps)'),
+              ),
+
+              // نافذة عرض الخريطة الحقيقية (Real Map Viewport)
+              Container(
+                height: 200,
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: borderColor),
                 ),
-              ],
-            ),
+                child: Stack(
+                  children: [
+                    // طبقة البلاطات الجغرافية الحقيقية (Real OpenStreetMap / CartoDB Tiles)
+                    Positioned.fill(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Image.network(
+                              tileUrl1,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildMapFallback(isDark),
+                            ),
+                          ),
+                          Expanded(
+                            child: Image.network(
+                              tileUrl2,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildMapFallback(isDark),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // طبقة تظليل ناعمة لزيادة وضوح المؤشرات والعناصر
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withAlpha(isDark ? 70 : 30),
+                              Colors.transparent,
+                              Colors.black.withAlpha(isDark ? 90 : 40),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // مسار الملاحة الرابط بين موقع المريض والصيدلية
+                    CustomPaint(
+                      size: const Size(double.infinity, 200),
+                      painter: _NavRouteOverlayPainter(isDark: isDark),
+                    ),
+
+                    // نقطة موقع المريض الفعلي (مع تأثير الرادار)
+                    Positioned(
+                      bottom: 20,
+                      right: 20,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(9),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0284C7),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF0284C7).withAlpha(120),
+                                  blurRadius: 12,
+                                  spreadRadius: 3,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(Icons.person_pin_circle_rounded, color: Colors.white, size: 20),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFF0284C7), width: 1.2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(30),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              'موقعك الفعلي',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                color: isDark ? Colors.white : const Color(0xFF0369A1),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // بطاقة زمن الوصول التقديري في منتصف المسار
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreen,
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(40),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.directions_car_rounded,
+                              size: 16,
+                              color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreen,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '~ $drivingMinutes دقائق بالسيارة',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: isDark ? Colors.white : PharmaTheme.primaryGreenDark,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // نقطة موقع الصيدلية المعتمد
+                    Positioned(
+                      top: 18,
+                      left: 20,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(9),
+                            decoration: BoxDecoration(
+                              color: PharmaTheme.primaryGreen,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: PharmaTheme.primaryGreen.withAlpha(140),
+                                  blurRadius: 12,
+                                  spreadRadius: 3,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(Icons.local_pharmacy_rounded, color: Colors.white, size: 20),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: PharmaTheme.primaryGreen, width: 1.2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(30),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              widget.pharmacy.name,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                color: isDark ? Colors.white : PharmaTheme.primaryGreenDark,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // شارة مصدر الخريطة الحقيقي
+                    Positioned(
+                      bottom: 4,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withAlpha(120),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          '© OpenStreetMap & CARTO',
+                          style: TextStyle(fontSize: 8, color: Colors.white70),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // شريط المؤشرات السريعة وزر الملاحة المباشرة
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildMetric(Icons.directions_car_rounded, '$drivingMinutes د', 'قيادة بالسيارة', textMainColor, textMutedColor),
+                        _buildDivider(borderColor),
+                        _buildMetric(Icons.directions_walk_rounded, '$walkingMinutes د', 'سيراً على الأقدام', textMainColor, textMutedColor),
+                        _buildDivider(borderColor),
+                        _buildMetric(Icons.straighten_rounded, '$distanceKm كم', 'المسافة الجغرافية', textMainColor, textMutedColor),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 50),
+                        backgroundColor: const Color(0xFF0284C7),
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: () => _openGoogleMapsRoute(userLat, userLng, destLat, destLng),
+                      icon: const Icon(Icons.navigation_rounded, size: 20),
+                      label: const Text(
+                        'فتح الملاحة والتوجيه الحي (Google Maps)',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        );
+      },
+    );
+  }
+
+  Widget _buildMapFallback(bool isDark) {
+    return Container(
+      color: isDark ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
+      child: Center(
+        child: Icon(
+          Icons.map_outlined,
+          size: 48,
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+        ),
       ),
     );
   }
 
-  Widget _buildQuickMetric(IconData icon, String value, String label) {
+  Widget _buildDivider(Color color) {
+    return Container(
+      height: 30,
+      width: 1,
+      color: color,
+    );
+  }
+
+  Widget _buildMetric(IconData icon, String value, String label, Color textColor, Color mutedColor) {
     return Column(
       children: [
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: PharmaTheme.textMuted),
+            Icon(icon, size: 18, color: PharmaTheme.primaryGreen),
             const SizedBox(width: 4),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: PharmaTheme.textMain)),
+            Text(
+              value,
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 14,
+                color: textColor,
+              ),
+            ),
           ],
         ),
-        Text(label, style: const TextStyle(fontSize: 11, color: PharmaTheme.textMuted)),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(fontSize: 11, color: mutedColor),
+        ),
       ],
     );
   }
 }
 
-class _RouteMapPainter extends CustomPainter {
+class _NavRouteOverlayPainter extends CustomPainter {
+  final bool isDark;
+
+  _NavRouteOverlayPainter({required this.isDark});
+
   @override
   void paint(Canvas canvas, Size size) {
-    final gridPaint = Paint()
-      ..color = const Color(0xFFE2E8F0)
-      ..strokeWidth = 1.0;
+    final path = Path();
+    // يبدأ من موقع المريض (أسفل اليمين) إلى الصيدلية (أعلى اليسار)
+    path.moveTo(size.width - 45, size.height - 45);
+    path.cubicTo(
+      size.width * 0.75,
+      size.height * 0.7,
+      size.width * 0.35,
+      size.height * 0.3,
+      45,
+      45,
+    );
 
-    // خطوط الشبكة والشوارع
-    for (double i = 0; i < size.width; i += 30) {
-      canvas.drawLine(Offset(i, 0), Offset(i, size.height), gridPaint);
-    }
-    for (double j = 0; j < size.height; j += 30) {
-      canvas.drawLine(Offset(0, j), Offset(size.width, j), gridPaint);
-    }
-
-    // الشارع الرئيسي
-    final roadPaint = Paint()
-      ..color = const Color(0xFFCBD5E1)
-      ..strokeWidth = 16.0
+    // توهج خلفي للمسار
+    final glowPaint = Paint()
+      ..color = (isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreen).withAlpha(50)
+      ..strokeWidth = 10.0
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
+    canvas.drawPath(path, glowPaint);
 
-    final path = Path();
-    path.moveTo(size.width - 50, size.height - 50);
-    path.cubicTo(
-      size.width * 0.7,
-      size.height * 0.2,
-      size.width * 0.4,
-      size.height * 0.8,
-      60,
-      40,
-    );
-    canvas.drawPath(path, roadPaint);
-
-    // خط المسار الأخضر المباشر (Medical Route)
+    // خط المسار الرئيسي
     final routePaint = Paint()
-      ..color = PharmaTheme.primaryGreen
+      ..color = isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreen
       ..strokeWidth = 4.0
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
-
     canvas.drawPath(path, routePaint);
   }
 
