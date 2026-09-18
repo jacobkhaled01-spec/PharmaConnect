@@ -31,6 +31,28 @@ class MedicineSearchItem {
       distanceKm: (json['distance_km'] as num?)?.toDouble(),
     );
   }
+
+  MedicineSearchItem copyWith({
+    int? stockId,
+    MedicineInfo? medicine,
+    PharmacyInfo? pharmacy,
+    int? availableQuantity,
+    double? price,
+    String? currency,
+    String? status,
+    double? distanceKm,
+  }) {
+    return MedicineSearchItem(
+      stockId: stockId ?? this.stockId,
+      medicine: medicine ?? this.medicine,
+      pharmacy: pharmacy ?? this.pharmacy,
+      availableQuantity: availableQuantity ?? this.availableQuantity,
+      price: price ?? this.price,
+      currency: currency ?? this.currency,
+      status: status ?? this.status,
+      distanceKm: distanceKm ?? this.distanceKm,
+    );
+  }
 }
 
 class MedicineInfo {

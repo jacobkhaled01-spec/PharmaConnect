@@ -16,6 +16,7 @@ class MedicineDetailsScreen extends StatefulWidget {
 
 class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
   int _quantity = 1;
+  late int _availableQuantity;
   bool _isLoading = false;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -23,6 +24,7 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    _availableQuantity = widget.item.availableQuantity;
     final user = ApiService().currentUser;
     if (user != null) {
       _nameController.text = user.name;
@@ -52,17 +54,22 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
       patientPhone: _phoneController.text.trim(),
     );
 
-    setState(() {
-      _isLoading = false;
-    });
-
     if (mounted) {
-      Navigator.push(
+      setState(() {
+        _availableQuantity = (_availableQuantity - _quantity).clamp(0, 999999);
+        _isLoading = false;
+      });
+
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => ReservationPassScreen(reservation: reservation),
         ),
       );
+
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
     }
   }
 
@@ -111,7 +118,7 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          'متوفر ${widget.item.availableQuantity} علبة',
+                          'متوفر $_availableQuantity علبة',
                           style: TextStyle(
                             color: isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenDark,
                             fontWeight: FontWeight.bold,
@@ -250,7 +257,7 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
                       ),
                       Text('$_quantity', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                       IconButton(
-                        onPressed: _quantity < widget.item.availableQuantity ? () => setState(() => _quantity++) : null,
+                        onPressed: _quantity < _availableQuantity ? () => setState(() => _quantity++) : null,
                         icon: const Icon(Icons.add_circle_outline),
                         color: PharmaTheme.primaryGreen,
                       ),

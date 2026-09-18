@@ -135,15 +135,18 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: PharmaTheme.mintAccent,
+                color: ThemeController().isDarkMode ? const Color(0xFF064E3B) : PharmaTheme.mintAccent,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.local_pharmacy, color: PharmaTheme.primaryGreen, size: 24),
+              child: const Icon(Icons.local_pharmacy, color: PharmaTheme.primaryGreen, size: 20),
             ),
-            const SizedBox(width: 10),
-            const Text(
-              AppConstants.appName,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+            const SizedBox(width: 8),
+            const Flexible(
+              child: Text(
+                AppConstants.appName,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -156,24 +159,6 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: ThemeController().isDarkMode ? 'الوضع النهاري' : 'الوضع الليلي',
             onPressed: () {
               ThemeController().toggleTheme();
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.receipt_long_outlined),
-            tooltip: 'حجوزاتي',
-            onPressed: () {
-              setState(() {
-                _currentTabIndex = 1;
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            tooltip: 'حسابي',
-            onPressed: () {
-              setState(() {
-                _currentTabIndex = 2;
-              });
             },
           ),
         ],
@@ -192,16 +177,21 @@ class _HomeScreenState extends State<HomeScreen> {
             _currentTabIndex = index;
           });
         },
-        items: const [
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(
             icon: Icon(Icons.search),
             label: 'البحث عن الأدوية',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long_rounded),
+            icon: ApiService().activeReservationsCount > 0
+                ? Badge(
+                    label: Text('${ApiService().activeReservationsCount}'),
+                    child: const Icon(Icons.receipt_long_rounded),
+                  )
+                : const Icon(Icons.receipt_long_rounded),
             label: 'طلباتي وحجوزاتي',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             label: 'حسابي',
           ),
@@ -522,23 +512,60 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 16),
                   TextField(
                     controller: _searchController,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
                     onChanged: (val) {
                       _fetchMedicines(val);
                     },
                     decoration: InputDecoration(
                       hintText: 'اكتب اسم الدواء التجاري أو العلمي...',
-                      prefixIcon: const Icon(Icons.search, color: PharmaTheme.primaryGreen),
+                      hintStyle: TextStyle(
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        fontSize: 14,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreen,
+                      ),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear, color: PharmaTheme.textMuted),
+                              icon: Icon(
+                                Icons.clear,
+                                color: isDark ? Colors.white70 : PharmaTheme.textMuted,
+                              ),
                               onPressed: () {
                                 _searchController.clear();
                                 _fetchMedicines('');
                               },
                             )
-                          : const Icon(Icons.filter_list, color: PharmaTheme.primaryGreen),
+                          : Icon(
+                              Icons.filter_list,
+                              color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreen,
+                            ),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: isDark ? const Color(0xFF334155) : Colors.transparent,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: isDark ? const Color(0xFF334155) : Colors.transparent,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreen,
+                          width: 2,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -687,30 +714,55 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: _popularKeywords.map((keyword) {
-            return ActionChip(
-              avatar: Icon(
-                Icons.medication_outlined,
-                size: 16,
-                color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark,
-              ),
-              label: Text(
-                keyword,
-                style: TextStyle(
-                  color: isDark ? PharmaTheme.darkTextMain : PharmaTheme.primaryGreenDark,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _popularKeywords.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 2.7,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+          ),
+          itemBuilder: (context, index) {
+            final keyword = _popularKeywords[index];
+            return InkWell(
+              onTap: () => _onQuickSearch(keyword),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF0FDF4),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFBBF7D0),
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.medication_outlined,
+                      size: 18,
+                      color: isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark,
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        keyword,
+                        style: TextStyle(
+                          color: isDark ? PharmaTheme.darkTextMain : PharmaTheme.primaryGreenDark,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF0FDF4),
-              side: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFBBF7D0)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              onPressed: () => _onQuickSearch(keyword),
             );
-          }).toList(),
+          },
         ),
         const SizedBox(height: 20),
       ],
@@ -723,13 +775,17 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        onTap: () {
-          Navigator.push(
+        onTap: () async {
+          final reserved = await Navigator.push<bool>(
             context,
             MaterialPageRoute(
               builder: (context) => MedicineDetailsScreen(item: item),
             ),
           );
+          if (reserved == true && mounted) {
+            _fetchMedicines(_searchController.text);
+            setState(() {});
+          }
         },
         child: Padding(
           padding: const EdgeInsets.all(16.0),

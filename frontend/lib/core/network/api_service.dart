@@ -216,14 +216,33 @@ class ApiService {
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
         final List data = body['data'] ?? [];
-        return data.map((item) => MedicineSearchItem.fromJson(item)).toList();
+        final items = data.map((item) => MedicineSearchItem.fromJson(item)).toList();
+        return _applyStockDeductions(items);
       }
     } catch (_) {
       // في حال تعذر الاتصال المباشر بالخادم المحلي أثناء التجربة الأولى، نقدم نتائج نموذجية حية
     }
 
-    return _getFallbackSearchResults(query);
+    return _applyStockDeductions(_getFallbackSearchResults(query));
   }
+
+  static final Map<int, int> _stockDeductions = {};
+
+  List<MedicineSearchItem> _applyStockDeductions(List<MedicineSearchItem> items) {
+    return items.map((item) {
+      final deducted = _stockDeductions[item.stockId] ?? 0;
+      if (deducted <= 0) return item;
+      final newQty = (item.availableQuantity - deducted).clamp(0, 999999);
+      final newStatus = newQty == 0 ? 'out_of_stock' : (newQty <= 5 ? 'low_stock' : 'available');
+      return item.copyWith(
+        availableQuantity: newQty,
+        status: newStatus,
+      );
+    }).toList();
+  }
+
+  int get activeReservationsCount =>
+      _cachedReservations.where((r) => r.status == 'pending' && !r.isExpired).length;
 
   final List<ReservationModel> _cachedReservations = [];
 
@@ -314,11 +333,14 @@ class ApiService {
         final body = json.decode(response.body);
         final created = ReservationModel.fromJson(body['data']);
         _cachedReservations.insert(0, created);
+        _stockDeductions[stockId] = (_stockDeductions[stockId] ?? 0) + quantity;
         return created;
       }
     } catch (_) {
       // Fallback
     }
+
+    _stockDeductions[stockId] = (_stockDeductions[stockId] ?? 0) + quantity;
 
     // نموذج حجز مؤقت جاهز
     final fallbackRes = ReservationModel(
