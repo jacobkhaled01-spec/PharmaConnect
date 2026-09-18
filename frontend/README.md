@@ -1,26 +1,17 @@
-# قطاع عميل الهاتف الذكي (Mobile Client - Flutter)
+# pharma_connect_client
 
-يمثل هذا المجلد تطبيق العميل للهواتف الذكية الموجه للمرضى والباحثين عن الأدوية في نظام **فارما-كونكت (PharmaConnect)**.
+A new Flutter project.
 
-## المسؤوليات التقنية:
-1. **واجهات البحث الجغرافي الذكي:**
-   - استعلام لحظي عن الأدوية والبدائل عبر الـ APIs، وعرض أقرب الصيدليات والأسعار وحالة التوفر.
-2. **شاشات الحجز اللحظي المؤقت:**
-   - إرسال طلب حجز مؤكد ومؤقت مع مؤقت عد تنازلي (Countdown Timer) للمريض.
-3. **الهوية والتصميم الطبي (Green & White UI/UX):**
-   - واجهات متناسقة تجمع بين الأخضر الزمردي والأبيض الصافي مع دعم الوضعين الداكن والفاتح وسهولة الوصول (WCAG 2.1 AA).
+## Getting Started
 
-## متطلبات التشغيل:
-- Flutter SDK (Channel Stable)
-- Dart SDK 3.x+
-- محاكي Android أو جهاز متصل
+This project is a starting point for a Flutter application.
 
-## فحص الكود والاختبارات:
-- **التحليل الساكن:**
-  ```bash
-  flutter analyze
-  ```
-- **تشغيل اختبارات الواجهات والوحدات:**
-  ```bash
-  flutter test
-  ```
+A few resources to get you started if this is your first Flutter project:
+
+- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
+- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.
