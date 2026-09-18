@@ -48,7 +48,7 @@
                                         <span class="badge badge-danger">منتهي الصلاحية</span>
                                     @else
                                         <span class="badge badge-warning">
-                                            متبقي {{ $res->expires_at->diffInMinutes(now()) }} دقيقة
+                                            متبقي {{ max(0, (int) now()->diffInMinutes($res->expires_at)) }} دقيقة
                                         </span>
                                     @endif
                                 @else

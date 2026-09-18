@@ -86,6 +86,8 @@ class ApiService {
     required int stockId,
     int quantity = 1,
     int ttlMinutes = 30,
+    String? patientName,
+    String? patientPhone,
   }) async {
     try {
       final uri = Uri.parse('${AppConstants.baseUrl}${AppConstants.reservationsEndpoint}');
@@ -97,6 +99,8 @@ class ApiService {
               'pharmacy_medicine_id': stockId,
               'quantity': quantity,
               'ttl_minutes': ttlMinutes,
+              if (patientName != null && patientName.isNotEmpty) 'patient_name': patientName,
+              if (patientPhone != null && patientPhone.isNotEmpty) 'patient_phone': patientPhone,
             }),
           )
           .timeout(const Duration(seconds: 4));

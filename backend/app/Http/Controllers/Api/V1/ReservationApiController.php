@@ -25,19 +25,30 @@ class ReservationApiController extends Controller
             'pharmacy_medicine_id' => 'required|exists:pharmacy_medicines,id',
             'quantity' => 'nullable|integer|min:1|max:10',
             'ttl_minutes' => 'nullable|integer|min:10|max:60',
+            'patient_name' => 'nullable|string|max:100',
+            'patient_phone' => 'nullable|string|max:30',
         ]);
 
         $user = $request->user();
         if (! $user) {
+            $patientName = ! empty($validated['patient_name']) ? trim($validated['patient_name']) : 'مريض مباشر';
+            $patientPhone = ! empty($validated['patient_phone']) ? trim($validated['patient_phone']) : '+967 770 000 000';
+            $phoneClean = preg_replace('/[^0-9]/', '', $patientPhone);
+            $email = 'patient_'.($phoneClean ?: uniqid()).'@pharmaconnect.ye';
+
             $user = User::firstOrCreate(
-                ['email' => 'patient@pharmaconnect.ye'],
+                ['phone' => $patientPhone],
                 [
-                    'name' => 'خالد علي (مريض)',
-                    'phone' => '+967773333333',
+                    'name' => $patientName,
+                    'email' => $email,
                     'role' => 'patient',
                     'password' => bcrypt('password123'),
                 ]
             );
+
+            if (! empty($validated['patient_name']) && $user->name !== $patientName) {
+                $user->update(['name' => $patientName]);
+            }
         }
         $userId = $user->id;
         $pharmacyMedicineId = (int) $validated['pharmacy_medicine_id'];

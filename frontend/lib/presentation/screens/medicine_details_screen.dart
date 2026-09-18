@@ -16,6 +16,15 @@ class MedicineDetailsScreen extends StatefulWidget {
 class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
   int _quantity = 1;
   bool _isLoading = false;
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
 
   void _reserveMedicine() async {
     setState(() {
@@ -26,6 +35,8 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
       stockId: widget.item.stockId,
       quantity: _quantity,
       ttlMinutes: 30,
+      patientName: _nameController.text.trim(),
+      patientPhone: _phoneController.text.trim(),
     );
 
     setState(() {
@@ -160,7 +171,7 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
             // محدد الكمية والسعر
             Container(
@@ -198,7 +209,44 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
+
+            // بيانات المريض المستلم
+            const Text('بيانات المريض المستلم (لتسجيل الحجز باسمك)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'اسم المريض / المستلم',
+                      hintText: 'مثال: يعقوب خالد',
+                      prefixIcon: Icon(Icons.person_outline, color: PharmaTheme.primaryGreen),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'رقم هاتف التواصل',
+                      hintText: 'مثال: 771234567',
+                      prefixIcon: Icon(Icons.phone_outlined, color: PharmaTheme.primaryGreen),
+                      isDense: true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
 
             // زر الحجز
             ElevatedButton(
