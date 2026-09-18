@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/network/api_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/medicine_search_model.dart';
+import '../widgets/pharmacy_route_map_widget.dart';
 import 'reservation_pass_screen.dart';
 
 class MedicineDetailsScreen extends StatefulWidget {
@@ -170,6 +171,13 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
                   ),
                 ],
               ),
+            ),
+            const SizedBox(height: 20),
+
+            // خريطة المسار المباشر من موقع المريض إلى الصيدلية
+            PharmacyRouteMapWidget(
+              pharmacy: pharma,
+              distanceKm: widget.item.distanceKm ?? 1.2,
             ),
             const SizedBox(height: 20),
 

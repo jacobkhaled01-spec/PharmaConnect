@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/reservation_model.dart';
+import '../widgets/pharmacy_route_map_widget.dart';
 
 class ReservationPassScreen extends StatefulWidget {
   final ReservationModel reservation;
@@ -189,7 +190,14 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+
+            // خريطة المسار المباشر والملاحة للوصول للصيدلية
+            PharmacyRouteMapWidget(
+              pharmacy: widget.reservation.pharmacy,
+              distanceKm: 1.2,
+            ),
+            const SizedBox(height: 20),
 
             // زر العودة للرئيسية
             ElevatedButton(
