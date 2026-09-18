@@ -21,6 +21,18 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
   final TextEditingController _phoneController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    final user = ApiService().currentUser;
+    if (user != null) {
+      _nameController.text = user.name;
+      if (user.phone != null) {
+        _phoneController.text = user.phone!;
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();

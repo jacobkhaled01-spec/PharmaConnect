@@ -5,6 +5,7 @@ import 'core/theme/app_theme.dart';
 import 'data/models/medicine_search_model.dart';
 import 'presentation/screens/medicine_details_screen.dart';
 import 'presentation/screens/my_reservations_screen.dart';
+import 'presentation/screens/profile_screen.dart';
 
 void main() {
   runApp(const PharmaConnectApp());
@@ -96,9 +97,22 @@ class _HomeScreenState extends State<HomeScreen> {
               });
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'حسابي',
+            onPressed: () {
+              setState(() {
+                _currentTabIndex = 2;
+              });
+            },
+          ),
         ],
       ),
-      body: _currentTabIndex == 0 ? _buildSearchBody() : const MyReservationsScreen(),
+      body: _currentTabIndex == 0
+          ? _buildSearchBody()
+          : _currentTabIndex == 1
+              ? const MyReservationsScreen()
+              : const ProfileScreen(),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentTabIndex,
         selectedItemColor: PharmaTheme.primaryGreen,
@@ -116,6 +130,10 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long_rounded),
             label: 'طلباتي وحجوزاتي',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: 'حسابي',
           ),
         ],
       ),
