@@ -47,6 +47,11 @@ class Reservation extends Model
         return $this->hasMany(ReservationItem::class);
     }
 
+    public function items(): HasMany
+    {
+        return $this->reservationItems();
+    }
+
     public function isExpired(): bool
     {
         return $this->status === 'pending' && $this->expires_at->isPast();
