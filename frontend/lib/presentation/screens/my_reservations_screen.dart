@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/network/api_service.dart';
 import '../../core/theme/app_theme.dart';
@@ -14,11 +15,27 @@ class MyReservationsScreen extends StatefulWidget {
 class _MyReservationsScreenState extends State<MyReservationsScreen> {
   List<ReservationModel> _reservations = [];
   bool _isLoading = true;
+  Timer? _ticker;
 
   @override
   void initState() {
     super.initState();
     _loadReservations();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_reservations.any((r) => r.status == 'pending' && !r.isCurrentlyExpired)) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadReservations() async {
@@ -169,13 +186,13 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _getStatusBgColor(item.status, isDark),
+                      color: _getStatusBgColor(item, isDark),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      _getStatusLabel(item.status),
+                      _getStatusLabel(item),
                       style: TextStyle(
-                        color: _getStatusTextColor(item.status, isDark),
+                        color: _getStatusTextColor(item, isDark),
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -256,46 +273,42 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
     );
   }
 
-  Color _getStatusBgColor(String status, bool isDark) {
-    switch (status) {
-      case 'pending':
-        return isDark ? const Color(0xFF064E3B) : PharmaTheme.mintAccent;
-      case 'completed':
-        return isDark ? const Color(0xFF064E3B).withAlpha(120) : const Color(0xFFDCFCE7);
-      case 'expired':
-      case 'cancelled':
-        return isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2);
-      default:
-        return isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9);
+  Color _getStatusBgColor(ReservationModel item, bool isDark) {
+    if (item.status == 'completed') {
+      return isDark ? const Color(0xFF064E3B).withAlpha(120) : const Color(0xFFDCFCE7);
     }
+    if (item.status == 'cancelled' || item.status == 'expired' || item.isCurrentlyExpired) {
+      return isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2);
+    }
+    return isDark ? const Color(0xFF064E3B) : PharmaTheme.mintAccent;
   }
 
-  Color _getStatusTextColor(String status, bool isDark) {
-    switch (status) {
-      case 'pending':
-        return isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenDark;
-      case 'completed':
-        return isDark ? const Color(0xFF34D399) : const Color(0xFF15803D);
-      case 'expired':
-      case 'cancelled':
-        return isDark ? const Color(0xFFF87171) : PharmaTheme.statusDanger;
-      default:
-        return isDark ? const Color(0xFF94A3B8) : PharmaTheme.textMuted;
+  Color _getStatusTextColor(ReservationModel item, bool isDark) {
+    if (item.status == 'completed') {
+      return isDark ? const Color(0xFF34D399) : const Color(0xFF15803D);
     }
+    if (item.status == 'cancelled' || item.status == 'expired' || item.isCurrentlyExpired) {
+      return isDark ? const Color(0xFFF87171) : PharmaTheme.statusDanger;
+    }
+    return isDark ? const Color(0xFF34D399) : PharmaTheme.primaryGreenDark;
   }
 
-  String _getStatusLabel(String status) {
-    switch (status) {
-      case 'pending':
-        return 'قيد الانتظار (حجز نشط)';
-      case 'completed':
-        return 'تم الاستلام بنجاح';
-      case 'expired':
-        return 'منتهي الصلاحية';
-      case 'cancelled':
-        return 'ملغي';
-      default:
-        return status;
+  String _getStatusLabel(ReservationModel item) {
+    if (item.status == 'completed') {
+      return 'تم الاستلام بنجاح ✓';
     }
+    if (item.status == 'cancelled') {
+      return 'ملغي';
+    }
+    if (item.status == 'expired' || item.isCurrentlyExpired) {
+      return 'منتهي الصلاحية';
+    }
+    if (item.status == 'pending') {
+      final rem = item.currentRemainingSeconds;
+      final mins = rem ~/ 60;
+      final secs = rem % 60;
+      return 'نشط (${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')})';
+    }
+    return item.status;
   }
 }

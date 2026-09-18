@@ -45,6 +45,26 @@ class ReservationModel {
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at']) : null,
     );
   }
+
+  /// احتساب الثواني المتبقية الحقيقية بناءً على فارق توقيت النظام الآن
+  int get currentRemainingSeconds {
+    if (status == 'completed' || status == 'cancelled') return 0;
+    if (expiresAt != null) {
+      final diff = expiresAt!.difference(DateTime.now()).inSeconds;
+      return diff > 0 ? diff : 0;
+    }
+    return ttlSecondsRemaining;
+  }
+
+  /// هل انتهت المهلة فعلياً بناءً على ساعة الجهاز الآن
+  bool get isCurrentlyExpired {
+    if (status == 'completed' || status == 'cancelled') return false;
+    if (status == 'expired') return true;
+    if (expiresAt != null) {
+      return DateTime.now().isAfter(expiresAt!);
+    }
+    return isExpired;
+  }
 }
 
 class ReservationItemModel {

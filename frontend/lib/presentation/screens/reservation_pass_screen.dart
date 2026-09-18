@@ -24,9 +24,9 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
   void initState() {
     super.initState();
     _reservation = widget.reservation;
-    _remainingSeconds = _reservation.ttlSecondsRemaining;
+    _remainingSeconds = _reservation.currentRemainingSeconds;
 
-    // تشغيل العداد التنازلي فقط إذا كان الحجز نشطاً بانتظار الاستلام
+    // تشغيل العداد التنازلي الحقيقي فقط إذا كان الحجز نشطاً بانتظار الاستلام
     if (_reservation.status == 'pending' && _remainingSeconds > 0) {
       _startTimer();
     }
@@ -40,22 +40,27 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
     if (fresh != null && mounted) {
       setState(() {
         _reservation = fresh;
-        _remainingSeconds = fresh.ttlSecondsRemaining;
+        _remainingSeconds = fresh.currentRemainingSeconds;
       });
 
-      if (_reservation.status != 'pending') {
+      if (_reservation.status != 'pending' || _remainingSeconds <= 0) {
         _timer?.cancel();
       }
     }
   }
 
   void _startTimer() {
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_remainingSeconds > 0) {
-        setState(() {
-          _remainingSeconds--;
-        });
-      } else {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      final remaining = _reservation.currentRemainingSeconds;
+      setState(() {
+        _remainingSeconds = remaining;
+      });
+      if (remaining <= 0) {
         timer.cancel();
       }
     });
@@ -82,7 +87,7 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
     final status = _reservation.status;
     final isCompleted = status == 'completed';
     final isCancelled = status == 'cancelled';
-    final isExpired = status == 'expired' || (!isCompleted && !isCancelled && _remainingSeconds <= 0);
+    final isExpired = _reservation.isCurrentlyExpired || (!isCompleted && !isCancelled && _remainingSeconds <= 0);
 
     // تجهيز أيقونة وألوان الحالة بدقة
     final Color iconBg;
