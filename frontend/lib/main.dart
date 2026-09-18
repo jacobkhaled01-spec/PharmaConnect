@@ -39,18 +39,36 @@ class _HomeScreenState extends State<HomeScreen> {
   List<MedicineSearchItem> _searchResults = [];
   bool _isLoading = false;
 
+  final List<String> _popularKeywords = [
+    'Panadol Extra',
+    'Augmentin',
+    'Brufen',
+    'Norvasc',
+  ];
+
   @override
   void initState() {
     super.initState();
-    _fetchMedicines();
+    // لا يتم جلب النتائج قبل أن يبدأ المستخدم بالبحث
   }
 
   Future<void> _fetchMedicines([String? query]) async {
+    final cleanQuery = query?.trim() ?? '';
+    if (cleanQuery.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _searchResults = [];
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
-    final results = await ApiService().searchMedicines(query: query);
+    final results = await ApiService().searchMedicines(query: cleanQuery);
 
     if (mounted) {
       setState(() {
@@ -58,6 +76,11 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  void _onQuickSearch(String keyword) {
+    _searchController.text = keyword;
+    _fetchMedicines(keyword);
   }
 
   @override
@@ -195,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               icon: const Icon(Icons.clear, color: PharmaTheme.textMuted),
                               onPressed: () {
                                 _searchController.clear();
-                                _fetchMedicines();
+                                _fetchMedicines('');
                               },
                             )
                           : const Icon(Icons.filter_list, color: PharmaTheme.primaryGreen),
@@ -206,66 +229,167 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'نتائج التوفر والصيدليات القريبة',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: PharmaTheme.textMain,
-                  ),
-                ),
-                Text(
-                  '${_searchResults.length} نتائج',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: PharmaTheme.textMuted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
 
-            if (_isLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: Center(
-                  child: CircularProgressIndicator(color: PharmaTheme.primaryGreen),
-                ),
-              )
-            else if (_searchResults.isEmpty)
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40.0),
-                  child: Column(
-                    children: [
-                      Icon(Icons.search_off, size: 60, color: Colors.grey.shade400),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'لا توجد أدوية متطابقة مع بحثك حالياً',
-                        style: TextStyle(color: PharmaTheme.textMuted, fontSize: 15),
+            if (_searchController.text.trim().isEmpty) ...[
+              _buildPreSearchState(),
+            ] else ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'نتائج البحث عن «${_searchController.text.trim()}»',
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: PharmaTheme.textMain,
                       ),
-                    ],
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              )
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _searchResults.length,
-                itemBuilder: (context, index) {
-                  final item = _searchResults[index];
-                  return _buildMedicineCard(item);
-                },
+                  Text(
+                    '${_searchResults.length} نتائج',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: PharmaTheme.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 12),
+
+              if (_isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Center(
+                    child: CircularProgressIndicator(color: PharmaTheme.primaryGreen),
+                  ),
+                )
+              else if (_searchResults.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40.0),
+                    child: Column(
+                      children: [
+                        Icon(Icons.search_off, size: 60, color: Colors.grey.shade400),
+                        const SizedBox(height: 12),
+                        Text(
+                          'لا توجد أدوية متطابقة مع «${_searchController.text.trim()}» حالياً',
+                          style: const TextStyle(color: PharmaTheme.textMuted, fontSize: 15),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _searchResults.length,
+                  itemBuilder: (context, index) {
+                    final item = _searchResults[index];
+                    return _buildMedicineCard(item);
+                  },
+                ),
+            ],
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPreSearchState() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(6),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: PharmaTheme.mintAccent,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.manage_search_rounded,
+                  color: PharmaTheme.primaryGreenDark,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ابدأ بالبحث عن دوائك',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: PharmaTheme.textMain,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'اكتب اسم الدواء في مربع البحث أعلاه أو اضغط على أحد الأدوية الشائعة أدناه للتحقق من توفره في الصيدليات القريبة منك.',
+                      style: TextStyle(fontSize: 12, color: PharmaTheme.textMuted, height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          'أدوية شائعة للبحث السريع',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: PharmaTheme.textMain,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: _popularKeywords.map((keyword) {
+            return ActionChip(
+              avatar: const Icon(Icons.medication_outlined, size: 16, color: PharmaTheme.primaryGreenDark),
+              label: Text(
+                keyword,
+                style: const TextStyle(
+                  color: PharmaTheme.primaryGreenDark,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+              backgroundColor: const Color(0xFFF0FDF4),
+              side: const BorderSide(color: Color(0xFFBBF7D0)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              onPressed: () => _onQuickSearch(keyword),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 20),
+      ],
     );
   }
 
