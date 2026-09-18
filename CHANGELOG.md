@@ -19,8 +19,10 @@
       2. مفتاح تبديل مخصص داخل شاشة الملف الشخصي `ProfileScreen`.
   - **إعادة تصميم وتنسيق الشاشات وتجنب تجاوزات الحواف (Zero Layout Overflows):**
     - إعادة بناء كافة البطاقات في `HomeScreen`, `ProfileScreen`, `AuthScreen`, `MedicineDetailsScreen`, `ReservationPassScreen`, `MyReservationsScreen` لتستخدم أسطح متكيفة ديناميكياً مع الثيم الفعال (`cardBg`, `borderColor`, `isDark`).
-    - استخدام `Wrap` و `Expanded` في بطاقات النتائج لمنع أخطاء تجاوز الشاشة في الهواتف ذات الشاشات الصغيرة.
-  - فحص الكود الشامل بنسبة 100% عبر `flutter analyze` دون أي تحذيرات أو أخطاء.
+    - معالجة خطأ تجاوز العرض (`RenderFlex overflowed by 35 pixels`) في `MedicineDetailsScreen` بجعل أسطر التفاصيل مرنة وتفاعلية مع المساحة باستخدام `Expanded` و `Flexible`.
+  - **معالجة بناء بيئة Windows (Windows Desktop Build Stability):**
+    - تجاوز خطأ حزمة `objective_c` المعتمِدة على الميزات التجريبية (Native Assets) عبر تثبيت `path_provider_foundation: 2.4.0` في `dependency_overrides` بما يضمن بناء التطبيق على نظام Windows دون أي تعارضات مسار (`D:\IT FILES`).
+  - فحص الكود واجتياز 100% من اختبارات الودجات واختبارات الوحدات والنماذج بنجاح تام.
 
 ## [2.7.0] - 2026-09-18
 ### أضيف (Added)
