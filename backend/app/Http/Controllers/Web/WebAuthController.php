@@ -32,14 +32,19 @@ class WebAuthController extends Controller
             $request->session()->regenerate();
 
             $user = Auth::user();
-            if ($user->isPharmacy() || $user->isAdmin()) {
+            if ($user->isAdmin()) {
+                return redirect()->intended(route('admin.dashboard'))
+                    ->with('success', 'مرحباً بك في لوحة الإدارة المركزية لنظام PharmaConnect.');
+            }
+
+            if ($user->isPharmacy()) {
                 return redirect()->intended(route('pharmacy.inventory'))
                     ->with('success', 'مرحباً بك مجدداً في بوابة إدارة مخزون الصيدلية.');
             }
 
             Auth::logout();
 
-            return back()->withErrors(['email' => 'عذراً، هذا الحساب غير مسجل كصيدلية مرخصة.']);
+            return back()->withErrors(['email' => 'عذراً، هذا الحساب غير مصرح له بالدخول للبوابة الإدارية.']);
         }
 
         return back()->withErrors(['email' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة.'])->onlyInput('email');

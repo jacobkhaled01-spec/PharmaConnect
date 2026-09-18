@@ -174,9 +174,10 @@
 
         <div class="demo-box">
             <strong>🔑 حسابات تجريبية مهيأة مسبقاً:</strong>
-            <div style="margin-top: 4px;">• <strong>صيدلية الشفاء:</strong> <code>shifa@pharmaconnect.ye</code></div>
+            <div style="margin-top: 4px;">• <strong>مشرف النظام العام:</strong> <code>admin@pharmaconnect.ye</code></div>
+            <div>• <strong>صيدلية الشفاء:</strong> <code>shifa@pharmaconnect.ye</code></div>
             <div>• <strong>صيدلية الأمل:</strong> <code>amal@pharmaconnect.ye</code></div>
-            <div>• <strong>كلمة المرور:</strong> <code>password123</code></div>
+            <div>• <strong>كلمة المرور للجميع:</strong> <code>password123</code></div>
         </div>
     </div>
 </body>

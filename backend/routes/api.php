@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\MedicineSearchController;
+use App\Http\Controllers\Api\V1\PartnerIntegrationApiController;
 use App\Http\Controllers\Api\V1\ReservationApiController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,7 +26,15 @@ Route::prefix('v1')->group(function () {
     Route::get('/reservations/my', [ReservationApiController::class, 'myReservations']);
     Route::post('/reservations/{id}/cancel', [ReservationApiController::class, 'cancel']);
 
-    // 4. المسارات المحمية بـ Sanctum (الملف الشخصي وتسجيل الخروج)
+    // 4. واجهات الربط البرمجي لأنظمة الصيدليات المحاسبية ونقاط البيع (Partner B2B Integration API)
+    Route::prefix('partner')->group(function () {
+        Route::post('/inventory/sync', [PartnerIntegrationApiController::class, 'syncInventory']);
+        Route::post('/inventory/update-item', [PartnerIntegrationApiController::class, 'updateItem']);
+        Route::get('/reservations', [PartnerIntegrationApiController::class, 'getReservations']);
+        Route::post('/reservations/{id}/fulfill', [PartnerIntegrationApiController::class, 'fulfillReservation']);
+    });
+
+    // 5. المسارات المحمية بـ Sanctum (الملف الشخصي وتسجيل الخروج)
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/auth/profile', [AuthController::class, 'profile']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);

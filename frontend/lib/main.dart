@@ -411,23 +411,24 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 6,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.medicine.tradeName,
-                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: PharmaTheme.textMain),
-                        ),
-                        Text(
-                          item.medicine.scientificName,
-                          style: const TextStyle(fontSize: 13, color: PharmaTheme.textMuted, fontStyle: FontStyle.italic),
-                        ),
-                      ],
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.medicine.tradeName,
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: PharmaTheme.textMain),
+                      ),
+                      Text(
+                        item.medicine.scientificName,
+                        style: const TextStyle(fontSize: 13, color: PharmaTheme.textMuted, fontStyle: FontStyle.italic),
+                      ),
+                    ],
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

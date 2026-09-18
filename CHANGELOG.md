@@ -2,6 +2,24 @@
 
 جميع التعديلات والخطوات البرمجية والتوثيقية لمشروع الصيدلية (خادم وعميل).
 
+## [2.7.0] - 2026-09-18
+### أضيف (Added)
+- **لوحة الإدارة المركزية للنظام ككل (Super Admin Central Portal):**
+  - بناء متحكم الإدارة `AdminDashboardController` المخصص للمشرف العام (`role === 'admin'`).
+  - تطوير قوالب واجهات الإدارة:
+    - `admin/dashboard.blade.php`: إحصائيات النظام اللحظية (الصيدليات، المرضى، الأدوية، الحجوزات)، ومراقبة حية لأحدث العمليات.
+    - `admin/pharmacies.blade.php`: إدارة كاملة للصيدليات (تفعيل، تعطيل، توثيق واعتماد، عرض بيانات الترخيص والتواصل).
+    - `admin/patients.blade.php`: إدارة مستخدمي تطبيق الهاتف ومتابعة سجل نشاط حجوزاتهم.
+    - `admin/medicines.blade.php`: إدارة الفهرس الوطني العام للأدوية مع نموذج إضافة دواء جديد وتصنيفه والباركود.
+  - توجيه المشرف العام تلقائياً عند تسجيل الدخول (`admin@pharmaconnect.ye`) إلى `/admin/dashboard`.
+- **واجهات ربط أنظمة الصيدليات المحاسبية (Partner B2B Integration API):**
+  - بناء `PartnerIntegrationApiController` لتوفير واجهات RESTful موحدة تتيح لبرامج الصيدليات ونقاط البيع (Onyx Pro، المحاسب، إلخ) المزامنة اللحظية:
+    - `POST /api/v1/partner/inventory/sync`: مزامنة المخزون والأسعار بالجملة (Batch Sync).
+    - `POST /api/v1/partner/inventory/update-item`: تحديث كمية صنف لحظياً عند البيع من الكاشير (Real-time POS Hook).
+    - `GET /api/v1/partner/reservations`: سحب الحجوزات الجديدة الواردة من تطبيق المريض مباشرة إلى نظام الصيدلية.
+    - `POST /api/v1/partner/reservations/{id}/fulfill`: تأكيد تسليم الحجز آلياً عند مسح QR العميل.
+  - كتابة اختبار ميزة شامل `AdminAndPartnerApiTest` واجتياز 11 اختباراً بنجاح 100%.
+
 ## [2.6.0] - 2026-09-18
 ### تم الإصلاح والتحسين (Fixed & Enhanced)
 - **منطق وحالة شاشة البحث الأولية (Refined Search Lifecycle & Pre-Search State):**
