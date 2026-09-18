@@ -2,6 +2,15 @@
 
 جميع التعديلات والخطوات البرمجية والتوثيقية لمشروع الصيدلية (خادم وعميل).
 
+## [2.18.0] - 2026-09-19
+### أضيف وهُيّئ (Added & Configured)
+- **تهيئة النشر السحابي المجاني الكامل على منصة Render.com (`render.yaml` & `Dockerfile`):**
+  - إنشاء ملف البناء السحابي `render.yaml` في جذر المشروع لدعم النشر الآلي بضغطة واحدة (Blueprint Deploy).
+  - إنشاء `backend/Dockerfile` و `backend/docker-entrypoint.sh` لبيئة إنتاج خفيفة تعتمد على Alpine Linux و PHP 8.2 مع تشغيل آلي للـ Migrations والـ Seeders.
+  - إضافة `backend/.dockerignore` لتقليص زمن الرفع والبناء السحابي.
+  - تحديث `frontend/lib/core/constants/app_constants.dart` بدعم التبديل السلس بين الخادم المحلي والسيرفر السحابي المباشر عبر `useCloudBackend`.
+  - كتابة دليل النشر السحابي المجاني خطوة بخطوة في [`docs/RENDER_DEPLOYMENT_GUIDE.md`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/docs/RENDER_DEPLOYMENT_GUIDE.md).
+
 ## [2.17.0] - 2026-09-19
 ### أضيف وتوثق (Added & Documented)
 - **إنشاء ورقة المراجعة السريعة والمكثفة للمناقشة (`docs/CHEAT_SHEET.md`):**

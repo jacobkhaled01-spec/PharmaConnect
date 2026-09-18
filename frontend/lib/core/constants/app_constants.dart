@@ -6,7 +6,14 @@ class AppConstants {
   static const String appTagline = 'المنصة الذكية لتتبع وفرة الأدوية بين الصيدليات';
 
   // Base API Configuration
+  // لتفعيل الاتصال بالخادم السحابي الحي على Render، اجعل هذه القيمة true
+  static const bool useCloudBackend = false;
+  static const String cloudBaseUrl = 'https://pharmaconnect-backend.onrender.com/api/v1';
+
   static String get baseUrl {
+    if (useCloudBackend) {
+      return cloudBaseUrl;
+    }
     if (kIsWeb || (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS))) {
       return 'http://127.0.0.1:8000/api/v1';
     }
