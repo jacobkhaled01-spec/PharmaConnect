@@ -56,26 +56,36 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
 
   Future<void> _checkServerStatus() async {
     final prevStatus = _reservation.status;
+    final isLocalMockCode = RegExp(r'^RES-\d+$').hasMatch(_reservation.reservationCode);
+
     var fresh = await ApiService().getReservationDetails(_reservation.reservationCode);
 
-    // في حال تعذر العثور على الحجز برمز محلي مؤقت، نستعلم قائمة حجوزات المريض من الخادم للربط بالرمز الحقيقي
-    if (fresh == null) {
+    // إذا لم يُعثر على الحجز برمز محدد، أو كان رمزاً محلياً مؤقتاً، أو ما زال قيد الانتظار:
+    // نستعلم قائمة الحجوزات الحقيقية من الخادم لمطابقتها مع الصيدلية
+    if (fresh == null || isLocalMockCode || fresh.status == 'pending') {
       final myReservations = await ApiService().getMyReservations();
       for (final r in myReservations) {
-        if (r.pharmacy.id == _reservation.pharmacy.id || r.pharmacy.name == _reservation.pharmacy.name) {
-          fresh = r;
-          break;
+        final matchesPharmacy = (r.pharmacy.id == _reservation.pharmacy.id) ||
+            (r.pharmacy.name.trim() == _reservation.pharmacy.name.trim());
+        if (matchesPharmacy) {
+          // نفضل الحجز المكتمل أو الحجز الحقيقي بالخادم
+          if (r.status == 'completed' || isLocalMockCode || r.reservationCode != _reservation.reservationCode) {
+            fresh = r;
+            break;
+          }
         }
       }
     }
 
     if (fresh != null && mounted) {
+      final becameCompleted = (prevStatus != 'completed') && (fresh.status == 'completed');
+
       setState(() {
         _reservation = fresh!;
         _remainingSeconds = fresh.currentRemainingSeconds;
       });
 
-      if ((prevStatus == 'pending' || prevStatus != 'completed') && fresh.status == 'completed') {
+      if (becameCompleted) {
         _timer?.cancel();
         _pollTimer?.cancel();
         HapticFeedback.heavyImpact();

@@ -2,6 +2,17 @@
 
 جميع التعديلات والخطوات البرمجية والتوثيقية لمشروع الصيدلية (خادم وعميل).
 
+## [2.24.0] - 2026-09-19
+### أُصلح وحُسّن وطُوّر (Fixed, Enhanced & Resolved)
+- **القضاء التام على استثناء شجرة فلاتر (`setState() or markNeedsBuild() called during build`):**
+  - تم إصلاح استدعاء `notifyListeners()` المتزامن داخل `LocationService.fetchCurrentLocation()` بترحيله بأمان عبر `WidgetsBinding.instance.addPostFrameCallback`.
+  - تم تغليف استدعاء تحديد الموقع في `_PharmacyRouteMapWidgetState.initState()` بواسطة `addPostFrameCallback` لضمان عدم إثارة أي استثناء يوقف بناء الشجرة أو يجمّد واجهة العميل عند فتح تذكرة الحجز.
+- **المزامنة اللحظية الفورية لتحديث حالة الحجز وتسليم الدواء في تطبيق الموبايل والعميل:**
+  - تم تصحيح منطق استعلام تفاصيل الحجز `getReservationDetails` في [`ApiService.dart`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/frontend/lib/core/network/api_service.dart) لمعالجة حالة 404 بدقة، ومنع إعادة الكاش المحلي المجمّد بحالة معلقة (`pending`).
+  - تم دعم الاستعلام بالهاتف ورموز الحجز معاً في واجهة `/api/v1/reservations/my` دون خروج مبكر فارغ، لضمان استرجاع حجوزات الزوار فور إنشائها.
+  - تم تطوير دالة فحص وتحديث الحالة `_checkServerStatus()` في [`ReservationPassScreen`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/frontend/lib/presentation/screens/reservation_pass_screen.dart) لمطابقة الرموز المؤقتة فورياً بالحجز الحقيقي المكتمل على السيرفر المركزي بمجرد تأكيد الصيدلي في لوحة التحكم، وإلغاء مؤقت العد التنازلي وإظهار شارة الاستلام الخضراء المكتملة فوراً.
+  - زيادة مهلة اتصال إنشاء الحجز إلى 35 ثانية لمنع اللجوء للرموز المحلية المؤقتة في فترات استيقاظ السيرفر السحابي.
+
 ## [2.23.0] - 2026-09-19
 ### أُصلح وحُسّن (Fixed & Enhanced)
 - **القضاء التام على اختفاء الحجوزات بعد ظهورها المؤقت (Fix Temporary Reservation Disappearance):**

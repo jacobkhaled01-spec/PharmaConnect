@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 
 /// خدمة إدارة الموقع الجغرافي الفعلي للعميل وحساب المسافات الحقيقية
@@ -22,10 +22,18 @@ class LocationService extends ChangeNotifier {
   String get locationName => _locationName;
   bool get isLocating => _isLocating;
 
+  void _safeNotify() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (hasListeners) {
+        notifyListeners();
+      }
+    });
+  }
+
   /// جلب الإحداثيات الحقيقية الفعلية لجهاز العميل عبر خدمة تحديد الموقع الجغرافي بالـ IP / الشبكة
   Future<void> fetchCurrentLocation() async {
     _isLocating = true;
-    notifyListeners();
+    _safeNotify();
 
     try {
       final response = await http
@@ -49,7 +57,7 @@ class LocationService extends ChangeNotifier {
       _userLng = 44.1950;
     } finally {
       _isLocating = false;
-      notifyListeners();
+      _safeNotify();
     }
   }
 

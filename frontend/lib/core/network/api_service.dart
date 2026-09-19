@@ -249,6 +249,9 @@ class ApiService extends ChangeNotifier {
     }).toList();
   }
 
+  String? _lastPatientPhone;
+  String? get lastPatientPhone => _lastPatientPhone;
+
   int get activeReservationsCount =>
       _cachedReservations.where((r) => r.status == 'pending' && !r.isExpired).length;
 
@@ -264,12 +267,20 @@ class ApiService extends ChangeNotifier {
           .where((c) => c.isNotEmpty)
           .toSet()
           .join(',');
-      final endpoint = codes.isNotEmpty
-          ? '${AppConstants.myReservationsEndpoint}?codes=$codes'
-          : AppConstants.myReservationsEndpoint;
+
+      final queryParams = <String>[];
+      if (codes.isNotEmpty) {
+        queryParams.add('codes=${Uri.encodeComponent(codes)}');
+      }
+      if (_lastPatientPhone != null && _lastPatientPhone!.isNotEmpty) {
+        queryParams.add('phone=${Uri.encodeComponent(_lastPatientPhone!)}');
+      }
+
+      final queryString = queryParams.isNotEmpty ? '?${queryParams.join('&')}' : '';
+      final endpoint = '${AppConstants.myReservationsEndpoint}$queryString';
 
       final uri = Uri.parse('${AppConstants.baseUrl}$endpoint');
-      final response = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
+      final response = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
@@ -327,11 +338,15 @@ class ApiService extends ChangeNotifier {
           notifyListeners();
           return updated;
         }
+      } else if (response.statusCode == 404) {
+        // الحجز غير موجود بالخادم بهذا الرمز (ربما رمز محلي مؤقت بحاجة لمطابقة)
+        return null;
       }
     } catch (e) {
       debugPrint('[ApiService] getReservationDetails warning: $e');
     }
 
+    // إذا كان خطأ اتصال مؤقت فقط، نرجع المحفوظ محلياً
     final cachedIndex = _cachedReservations.indexWhere((r) => r.reservationCode == codeOrId || r.id.toString() == codeOrId);
     if (cachedIndex != -1) {
       return _cachedReservations[cachedIndex];
@@ -350,6 +365,10 @@ class ApiService extends ChangeNotifier {
     MedicineInfo? medicine,
     double unitPrice = 0.0,
   }) async {
+    if (patientPhone != null && patientPhone.isNotEmpty) {
+      _lastPatientPhone = patientPhone;
+    }
+
     try {
       final uri = Uri.parse('${AppConstants.baseUrl}${AppConstants.reservationsEndpoint}');
       final response = await http
@@ -364,7 +383,7 @@ class ApiService extends ChangeNotifier {
               if (patientPhone != null && patientPhone.isNotEmpty) 'patient_phone': patientPhone,
             }),
           )
-          .timeout(const Duration(seconds: 25));
+          .timeout(const Duration(seconds: 35));
 
       debugPrint('[ApiService] createReservation status: ${response.statusCode}');
 
@@ -380,12 +399,16 @@ class ApiService extends ChangeNotifier {
       debugPrint('[ApiService] createReservation exception: $e');
     }
 
-    // فحص ما إذا كان الطلب قد نُفذ بالفعل بالخادم قبل استخدام المحاكاة
+    // فحص ما إذا كان الطلب قد نُفذ بالفعل بالخادم (مثلاً في حال بطء الاستجابة) قبل اللجوء للمحاكاة
     try {
+      await Future.delayed(const Duration(milliseconds: 1200));
       final currentList = await getMyReservations();
       if (currentList.isNotEmpty) {
         for (final r in currentList) {
-          if (r.pharmacy.id == (pharmacy?.id ?? -1) && r.status == 'pending') {
+          if ((r.pharmacy.id == (pharmacy?.id ?? -1) || r.pharmacy.name == (pharmacy?.name ?? '')) &&
+              r.createdAt != null &&
+              DateTime.now().difference(r.createdAt!).inMinutes < 5) {
+            _stockDeductions[stockId] = (_stockDeductions[stockId] ?? 0) + quantity;
             return r;
           }
         }

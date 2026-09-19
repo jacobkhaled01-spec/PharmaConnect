@@ -27,8 +27,12 @@ class _PharmacyRouteMapWidgetState extends State<PharmacyRouteMapWidget> {
   @override
   void initState() {
     super.initState();
-    // جلب موقع العميل الفعلي فور فتح البطاقة
-    _locationService.fetchCurrentLocation();
+    // جلب موقع العميل الفعلي بأمان بعد اكتمال مرحلة بناء الشجرة الأولى
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _locationService.fetchCurrentLocation();
+      }
+    });
   }
 
   // تحويل إحداثيات خطوط الطول والعرض إلى أرقام مربعات الخرائط الحقيقية (Web Mercator Slippy Tiles)

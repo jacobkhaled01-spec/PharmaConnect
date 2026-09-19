@@ -137,50 +137,49 @@ class ReservationApiController extends Controller
             ]);
         }
 
-        // 2. إذا كان زائراً ويمتلك رموز حجز محددة خاصة بجهازه
+        // 2. إذا كان زائراً ويمتلك رموز حجز محددة أو رقم هاتف
         $codes = $request->query('codes');
-        if ($codes) {
-            $codeList = array_filter(array_map('trim', explode(',', $codes)));
-            if (! empty($codeList)) {
-                $reservations = Reservation::with(['pharmacy', 'reservationItems.pharmacyMedicine.medicine'])
-                    ->whereIn('reservation_code', $codeList)
-                    ->latest()
-                    ->get();
+        $phone = $request->query('phone');
+        $codeList = $codes ? array_filter(array_map('trim', explode(',', $codes))) : [];
+        $cleanPhone = $phone ? preg_replace('/[^0-9]/', '', $phone) : null;
 
+        $query = Reservation::with(['pharmacy', 'reservationItems.pharmacyMedicine.medicine']);
+
+        if (! empty($codeList) && ! empty($cleanPhone)) {
+            $foundUser = User::where('phone', $phone)->orWhere('phone', $cleanPhone)->first();
+            $query->where(function ($q) use ($codeList, $foundUser) {
+                $q->whereIn('reservation_code', $codeList);
+                if ($foundUser) {
+                    $q->orWhere('user_id', $foundUser->id);
+                }
+            });
+        } elseif (! empty($codeList)) {
+            $query->whereIn('reservation_code', $codeList);
+        } elseif (! empty($cleanPhone)) {
+            $foundUser = User::where('phone', $phone)->orWhere('phone', $cleanPhone)->first();
+            if ($foundUser) {
+                $query->where('user_id', $foundUser->id);
+            } else {
                 return response()->json([
                     'success' => true,
-                    'count' => $reservations->count(),
-                    'data' => ReservationResource::collection($reservations),
+                    'count' => 0,
+                    'data' => [],
                 ]);
             }
+        } else {
+            return response()->json([
+                'success' => true,
+                'count' => 0,
+                'data' => [],
+            ]);
         }
 
-        // 3. إذا كان زائراً يستعلم برقم هاتفه
-        $phone = $request->query('phone');
-        if ($phone) {
-            $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
-            if (! empty($cleanPhone)) {
-                $foundUser = User::where('phone', $phone)
-                    ->orWhere('phone', $cleanPhone)
-                    ->first();
+        $reservations = $query->latest()->get();
 
-                if ($foundUser) {
-                    $reservations = $this->reservationService->getUserReservations($foundUser->id);
-
-                    return response()->json([
-                        'success' => true,
-                        'count' => $reservations->count(),
-                        'data' => ReservationResource::collection($reservations),
-                    ]);
-                }
-            }
-        }
-
-        // 4. إذا لم يكن مسجلاً وليس لديه أكواد أو هاتف: إرجاع قائمة فارغة بدلاً من حجوزات الآخرين
         return response()->json([
             'success' => true,
-            'count' => 0,
-            'data' => [],
+            'count' => $reservations->count(),
+            'data' => ReservationResource::collection($reservations),
         ]);
     }
 
