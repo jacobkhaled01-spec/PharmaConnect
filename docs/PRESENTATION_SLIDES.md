@@ -5,7 +5,7 @@
 
 ---
 
-## فهرس شرائح العرض الفني (14 شريحة متكاملة مع الأكواد)
+## فهرس شرائح العرض الفني (14 شريحة متكاملة مع الأكواد المشروحة)
 
 | الشريحة | المحور والمحتوى | تصنيف الشريحة | المدة المقترحة |
 | :---: | :--- | :---: | :---: |
@@ -13,11 +13,11 @@
 | **02** | [المشكلة الواقعية والحلول المعمارية المطبقة](#slide-02) | تحليل المتطلبات | دقيقة واحدة |
 | **03** | [المعمارية الموزعة ثلاثية الطبقات (3-Tier Architecture)](#slide-03) | معمارية النظم | دقيقة ونصف |
 | **04** | [هندسة البيانات والشكل المعياري الثالث (3NF Database)](#slide-04) | قواعد البيانات | دقيقة ونصف |
-| **05** | [كود التخاطب والمصادقة بالتوكنات (REST Auth & Bearer Tokens)](#slide-05) | **كود عملي (1/5)** | دقيقة ونصف |
-| **06** | [كود الحجز الذري وقفل التزامن (Atomic Concurrency Locking)](#slide-06) | **كود عملي (2/5)** | دقيقة ونصف |
-| **07** | [كود الاستعلام الجغرافي الكروي (Spherical GeoSearch & Haversine)](#slide-07) | **كود عملي (3/5)** | دقيقة واحدة |
-| **08** | [كود المزامنة اللحظية الحية (Real-Time State Polling & Live Feed)](#slide-08) | **كود عملي (4/5)** | دقيقة واحدة |
-| **09** | [كود بوابة الربط المحاسبي (B2B Partner ERP Integration API)](#slide-09) | **كود عملي (5/5)** | دقيقة واحدة |
+| **05** | [كود التخاطب والمصادقة بالتوكنات (REST Auth & Bearer Tokens)](#slide-05) | **كود عملي مشروح (1/5)** | دقيقة ونصف |
+| **06** | [كود الحجز الذري وقفل التزامن (Atomic Concurrency Locking)](#slide-06) | **كود عملي مشروح (2/5)** | دقيقة ونصف |
+| **07** | [كود الاستعلام الجغرافي الكروي (Spherical GeoSearch & Haversine)](#slide-07) | **كود عملي مشروح (3/5)** | دقيقة واحدة |
+| **08** | [كود المزامنة اللحظية الحية (Real-Time State Polling & Live Feed)](#slide-08) | **كود عملي مشروح (4/5)** | دقيقة واحدة |
+| **09** | [كود بوابة الربط المحاسبي (B2B Partner ERP Integration API)](#slide-09) | **كود عملي مشروح (5/5)** | دقيقة واحدة |
 | **10** | [تطبيق الهاتف وتجربة المريض (Flutter & Clean Architecture)](#slide-10) | عميل الهاتف | دقيقة واحدة |
 | **11** | [بوابة الويب للصيدليات والتكامل المحاسبي (Portal & B2B)](#slide-11) | بوابة الخادم | دقيقة واحدة |
 | **12** | [ضمان الجودة وأتمتة العمليات (QA, Looping Engineering & CI/CD)](#slide-12) | الجودة والعمليات | دقيقة واحدة |
@@ -123,25 +123,29 @@
 
 #### عميل الهاتف (Flutter / Dart) — `api_service.dart`:
 ```dart
+// frontend/lib/core/network/api_service.dart
+// 1. تجهيز ترويسات الطلب بنمط RESTful وحقن التوكن المشفر
 Map<String, String> get _headers => {
   'Content-Type': 'application/json',
   'Accept': 'application/json',
-  if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+  if (_authToken != null)
+    'Authorization': 'Bearer $_authToken', // توكن مصادقة العميل
 };
 
+// 2. دالة تسجيل الدخول وإرسال بيانات الاعتماد للخادم المركزي
 Future<AuthResult> login(String email, String pwd) async {
   final uri = Uri.parse('$baseUrl/auth/login');
   final res = await http.post(
     uri,
     headers: _headers,
-    body: json.encode({'email': email, 'password': pwd}),
-  ).timeout(const Duration(seconds: 5));
+    body: json.encode({'email': email, 'password': pwd}), // تشفير كائن JSON
+  ).timeout(const Duration(seconds: 5)); // مهلة أمان لحماية التطبيق من بطء الشبكة
 
   if (res.statusCode == 200) {
     final body = json.decode(utf8.decode(res.bodyBytes));
-    _authToken = body['data']['token'];
+    _authToken = body['data']['token']; // حفظ التوكن محلياً للطلبات اللاحقة
     _currentUser = UserModel.fromJson(body['data']['user']);
-    notifyListeners();
+    notifyListeners(); // إشعار واجهات التطبيق بتحديث حالة المستخدم فورياً
     return AuthResult(success: true, user: _currentUser);
   }
 }
@@ -149,24 +153,29 @@ Future<AuthResult> login(String email, String pwd) async {
 
 #### الخادم المركزي (Laravel / PHP) — `routes/api.php` & `AuthController.php`:
 ```php
-// routes/api.php
+// backend/routes/api.php
+// 1. مسارات الـ API المحمية بواسطة وسيط Laravel Sanctum
 Route::prefix('v1')->group(function () {
-    Route::post('/auth/login', [AuthController::class, 'login']);
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/auth/login', [AuthController::class, 'login']); // مسار عام للدخول
+    Route::middleware('auth:sanctum')->group(function () { // مسارات مؤمنة بـ Bearer Token
         Route::get('/auth/profile', [AuthController::class, 'profile']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
     });
 });
 
-// AuthController.php
+// backend/app/Http/Controllers/Api/V1/AuthController.php
+// 2. التحقق الصارم من صحة المدخلات وإصدار توكن Bearer عديم الحالة
 public function login(Request $request): JsonResponse {
-    $data = $request->validate(['email' => 'required|email', 'password' => 'required|string']);
-    $user = User::where('email', $data['email'])->first();
-    if (!$user || !Hash::check($data['password'], $user->password)) {
+    $data = $request->validate([
+        'email' => 'required|email', 'password' => 'required|string'
+    ]);
+    $user = User::where('email', $data['email'])->first(); // البحث عن الحساب بالبريد
+    if (!$user || !Hash::check($data['password'], $user->password)) { // مطابقة تجزئة كلمة المرور
         return response()->json(['message' => 'بيانات الدخول غير صحيحة'], 422);
     }
+    // إصدار توكن Bearer مشفر خاص بجلسة تطبيق الهاتف
     $token = $user->createToken('mobile_app')->plainTextToken;
-    return response()->json(['data' => ['token' => $token, 'user' => $user]]);
+    return response()->json(['data' => ['token' => $token, 'user' => $user]]); // رد JSON للعميل
 }
 ```
 
@@ -184,57 +193,63 @@ public function login(Request $request): JsonResponse {
 
 #### عميل الهاتف (Flutter / Dart) — `api_service.dart`:
 ```dart
+// frontend/lib/core/network/api_service.dart
+// إرسال طلب حجز دواء مؤقت مع تحديد مهلة الصلاحية الزمنية TTL
 Future<ReservationModel> createReservation({
   required int stockId,
   int quantity = 1,
-  int ttlMinutes = 30,
+  int ttlMinutes = 30, // مهلة الحجز الافتراضية 30 دقيقة
 }) async {
   final uri = Uri.parse('$baseUrl/reservations');
   final res = await http.post(
     uri,
     headers: _headers,
     body: json.encode({
-      'pharmacy_medicine_id': stockId,
-      'quantity': quantity,
-      'ttl_minutes': ttlMinutes,
+      'pharmacy_medicine_id': stockId, // معرف الصنف بصيدلية محددة
+      'quantity': quantity,             // الكمية المطلوبة
+      'ttl_minutes': ttlMinutes,        // مهلة حجز الدواء
     }),
   ).timeout(const Duration(seconds: 15));
 
   if (res.statusCode == 200 || res.statusCode == 201) {
     final body = json.decode(res.body);
-    final created = ReservationModel.fromJson(body['data']);
-    _cachedReservations.insert(0, created);
-    notifyListeners();
+    final created = ReservationModel.fromJson(body['data']); // إنشاء كائن التذكرة
+    _cachedReservations.insert(0, created); // تخزين التذكرة محلياً
+    notifyListeners(); // إشعار شاشة التذكرة لبدء مؤقت العد التنازلي الحي
     return created;
   }
-  throw Exception('فشل إتمام الحجز');
+  throw Exception('تعذر إتمام الحجز');
 }
 ```
 
 #### الخادم المركزي (Laravel / PHP) — `ReservationService.php`:
 ```php
+// backend/app/Services/ReservationService.php
 public function createReservation(int $userId, int $stockId, int $qty): Reservation {
+  // تنفيذ الحجز داخل معاملة ذرية متكاملة (ACID Transaction)
   return DB::transaction(function () use ($userId, $stockId, $qty) {
-    // 1. قفل تشاؤمي على مستوى الصف يمنع التنافس والـ Race Condition
+    // 1. قفل تشاؤمي على مستوى الصف يمنع تنافس مريضين على نفس العلبة (Race Condition)
     $stock = PharmacyMedicine::where('id', $stockId)
-      ->lockForUpdate()
+      ->lockForUpdate() // قفل حصري في InnoDB يمنع أي قراءة أو تعديل متزامن
       ->firstOrFail();
 
-    // 2. الفحص الذري للرصيد الفعلي
+    // 2. التحقق الذري من توفر الرصيد الفعلي قبل الخصم
     if ($stock->available_quantity < $qty) {
-      throw new Exception('عذراً، الكمية المطلوبة لم تعد متوفرة');
+      throw new Exception('عذراً، الكمية غير متوفرة حالياً');
     }
 
-    // 3. الخصم الآمن من المخزون
+    // 3. الخصم الآمن للكمية وتحديث حالة الصنف تلقائياً
     $stock->decrement('available_quantity', $qty);
+    if ($stock->available_quantity === 0) {
+      $stock->update(['status' => 'out_of_stock']);
+    }
 
-    // 4. إنشاء تذكرة الحجز بمؤقت الـ 30 دقيقة
+    // 4. إنشاء سجل الحجز برمز فريد ومؤقت صلاحية 30 دقيقة
     return Reservation::create([
-      'user_id' => $userId,
-      'pharmacy_id' => $stock->pharmacy_id,
-      'reservation_code' => 'RES-'.strtoupper(Str::random(6)),
-      'status' => 'pending',
-      'expires_at' => now()->addMinutes(30),
+      'user_id' => $userId, 'pharmacy_id' => $stock->pharmacy_id,
+      'reservation_code' => 'RES-'.strtoupper(Str::random(6)), // كود استلام الصيدلية
+      'status' => 'pending',                                   // الحالة: قيد الانتظار
+      'expires_at' => now()->addMinutes(30),                   // مهلة الـ TTL
     ]);
   });
 }
@@ -254,21 +269,24 @@ public function createReservation(int $userId, int $stockId, int $qty): Reservat
 
 #### عميل الهاتف (Flutter / Dart) — `api_service.dart`:
 ```dart
+// frontend/lib/core/network/api_service.dart
+// تمرير إحداثيات GPS الحالية ونصف قطر البحث في الـ Query String
 Future<List<MedicineSearchItem>> searchMedicines({
   String? query, double? latitude, double? longitude, double radiusKm = 20.0,
 }) async {
   final queryParams = <String, String>{
-    if (query != null) 'q': query,
-    if (latitude != null) 'lat': latitude.toString(),
-    if (longitude != null) 'lng': longitude.toString(),
-    'radius': radiusKm.toString(),
+    if (query != null) 'q': query,                     // اسم الدواء المطلوب
+    if (latitude != null) 'lat': latitude.toString(),  // خط العرض لموقع المريض
+    if (longitude != null) 'lng': longitude.toString(),// خط الطول لموقع المريض
+    'radius': radiusKm.toString(),                     // نصف القطر الأقصى (كم)
   };
 
   final uri = Uri.parse('$baseUrl/medicines/search')
       .replace(queryParameters: queryParams);
 
-  final res = await http.get(uri, headers: _headers);
+  final res = await http.get(uri, headers: _headers); // إرسال طلب GET خفيف
   final body = json.decode(utf8.decode(res.bodyBytes));
+  // تحويل استجابة الـ JSON لقائمة صيدليات مرتبة تصاعدياً بالأمتار
   return (body['data'] as List)
       .map((item) => MedicineSearchItem.fromJson(item))
       .toList();
@@ -277,21 +295,24 @@ Future<List<MedicineSearchItem>> searchMedicines({
 
 #### الخادم المركزي (Laravel / PHP) — `EloquentMedicineRepository.php`:
 ```php
+// backend/app/Repositories/Eloquent/EloquentMedicineRepository.php
+// تطبيق خوارزمية هافرسين الرياضية لحساب المسافة الكروية الحقيقية
 private function calculateHaversineDistance(float $lat1, float $lon1, float $lat2, float $lon2): float {
-    $earthRadiusKm = 6371.0; // نصف قطر الأرض الكروي
-    $dLat = deg2rad($lat2 - $lat1);
-    $dLon = deg2rad($lon2 - $lon1);
+    $earthRadiusKm = 6371.0; // نصف قطر كوكب الأرض بالكيلومتر
+    $dLat = deg2rad($lat2 - $lat1); // تحويل فرق درجات العرض إلى راديان
+    $dLon = deg2rad($lon2 - $lon1); // تحويل فرق درجات الطول إلى راديان
+    // معادلة هافرسين المثلثية الكروية
     $a = sin($dLat / 2) * sin($dLat / 2) +
          cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
          sin($dLon / 2) * sin($dLon / 2);
     $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-    return $earthRadiusKm * $c; // المسافة المباشرة بالكيلومتر
+    return $earthRadiusKm * $c; // الناتج: المسافة الواقعية المستقيمة (كم)
 }
 
-// تصفية الصيدليات وترتيبها تصاعدياً من الأقرب للمريض:
+// تصفية الصيدليات ضمن النطاق وفرز النتائج من الأقرب إلى الأبعد للمريض
 return $collection->filter(function ($item) use ($radiusKm) {
-    return $item->distance_km <= $radiusKm;
-})->sortBy('distance_km')->values();
+    return $item->distance_km <= $radiusKm; // استبعاد الصيدليات البعيدة
+})->sortBy('distance_km')->values();         // فرز تصاعدي حسب المسافة
 ```
 
 ---
@@ -308,23 +329,27 @@ return $collection->filter(function ($item) use ($radiusKm) {
 
 #### عميل الهاتف (Flutter / Dart) — `reservation_pass_screen.dart`:
 ```dart
+// frontend/lib/presentation/screens/reservation_pass_screen.dart
+// استطلاع دوري لحالة الحجز بالخلفية لاقتناص تأكيد الصيدلي فوراً
 void _startStatusPolling() {
   _pollTimer = Timer.periodic(const Duration(seconds: 2), (t) async {
+    // 1. استعلام الخادم عن الحالة الحالية للتذكرة بواسطة كود الحجز
     final fresh = await ApiService()
         .getReservationDetails(_reservation.reservationCode);
 
     if (fresh != null && mounted) {
+      // 2. التحقق مما إذا تم تأكيد تسليم الدواء بالويب وتحويل الحالة لـ completed
       final becameCompleted = (_reservation.status != 'completed') 
           && (fresh.status == 'completed');
       setState(() {
-        _reservation = fresh;
+        _reservation = fresh; // تحديث بيانات التذكرة في واجهة المريض
         _remainingSeconds = fresh.currentRemainingSeconds;
       });
 
       if (becameCompleted) {
-        t.cancel(); // إيقاف المؤقت
-        HapticFeedback.heavyImpact();
-        _showSuccessBadge(); // شارة الاستلام الخضراء
+        t.cancel(); // إيقاف الاستطلاع لتوفير موارد الجهاز والشبكة
+        HapticFeedback.heavyImpact(); // اهتزاز تفاعلي لتنبيه المريض
+        _showSuccessBadge(); // إظهار شارة الاستلام الخضراء بنجاح
       }
     }
   });
@@ -333,8 +358,11 @@ void _startStatusPolling() {
 
 #### بوابة الويب (Blade / JavaScript) — `reservations.blade.php`:
 ```javascript
+// backend/resources/views/pharmacy/reservations.blade.php
+// فحص دوري كل 5 ثوانٍ لتحديث جدول الحجوزات دون إعادة تحميل الصفحة
 async function fetchLatestReservations() {
     try {
+        // 1. جلب شريحة الـ HTML المحدثة للحجوزات الواردة من السيرفر
         const res = await fetch('/pharmacy/reservations/live-feed');
         if (res.ok) {
             const htmlText = await res.text();
@@ -342,15 +370,17 @@ async function fetchLatestReservations() {
             const doc = parser.parseFromString(htmlText, 'text/html');
             const newWrap = doc.getElementById('reservations-table-wrapper');
             const currWrap = document.getElementById('reservations-table-wrapper');
+            
+            // 2. تحديث DOM فقط في حال وجود حجز جديد أو تغيير حالة حجز قائم
             if (newWrap && currWrap && currWrap.innerHTML !== newWrap.innerHTML) {
-                currWrap.innerHTML = newWrap.innerHTML; // تحديث الجدول آلياً
+                currWrap.innerHTML = newWrap.innerHTML; // تحديث فوري وسلس للجدول
             }
         }
     } catch (err) {
-        console.warn('Auto-sync check failed:', err);
+        console.warn('Auto-sync check failed:', err); // معالجة صامتة لانقطاع الشبكة
     }
 }
-setInterval(fetchLatestReservations, 5000); // فحص دوري كل 5 ثوانٍ
+setInterval(fetchLatestReservations, 5000); // تكرار الفحص دورياً كل 5 ثوانٍ
 ```
 
 ---
@@ -369,18 +399,37 @@ setInterval(fetchLatestReservations, 5000); // فحص دوري كل 5 ثوانٍ
 ```json
 // HTTP POST /api/v1/partner/inventory/sync
 // Headers: X-Pharmacy-Id: 1 | Content-Type: application/json
+// حمولة مزامنة المخزون والأسعار الواردة من برنامج محاسبة الصيدلية (يمن سوفت / الإبداع)
 {
   "items": [
-    { "barcode": "6291100123456", "quantity": 25, "price": 1200.00 },
-    { "barcode": "6291100987654", "quantity": 10, "price": 3500.00 }
+    {
+      "barcode": "6291100123456", // باركود الصنف الدوائي الموحد
+      "quantity": 25,              // الكمية الجديدة المتوفرة على رف الصيدلية
+      "price": 1200.00             // السعر الفعلي المعتمد بالريال
+    },
+    {
+      "barcode": "6291100987654",
+      "quantity": 10,
+      "price": 3500.00
+    }
   ]
+}
+
+// استجابة الخادم الفورية بنجاح المزامنة وتحديث الرصيد السحابي:
+{
+  "success": true,
+  "message": "تمت مزامنة المخزون مع برنامج المحاسبة بنجاح",
+  "updated_count": 2
 }
 ```
 
 #### الخادم المركزي (Laravel / PHP) — `PartnerIntegrationApiController.php`:
 ```php
+// backend/app/Http/Controllers/Api/V1/PartnerIntegrationApiController.php
+// دالة معالجة المزامنة الدورية للمخزون من أنظمة الـ ERP ونقاط البيع (POS)
 public function syncInventory(Request $request): JsonResponse {
-    $pharmacy = $this->resolvePharmacy($request);
+    $pharmacy = $this->resolvePharmacy($request); // استخراج هوية الصيدلية المصادقة
+    // التحقق الصارم من صحة مصفوفة الأصناف وأسعارها وكمياتها
     $validated = $request->validate([
         'items' => 'required|array|min:1',
         'items.*.barcode' => 'nullable|string',
@@ -388,16 +437,17 @@ public function syncInventory(Request $request): JsonResponse {
         'items.*.price' => 'required|numeric|min:0',
     ]);
 
+    // معالجة كل صنف وتحديث كميته وسعره بالسجلات السحابية
     foreach ($validated['items'] as $itemData) {
         $medicine = Medicine::where('barcode', $itemData['barcode'])->first();
         if ($medicine) {
             PharmacyMedicine::updateOrCreate(
-                ['pharmacy_id' => $pharmacy->id, 'medicine_id' => $medicine->id],
-                ['available_quantity' => $itemData['quantity'], 'price' => $itemData['price']]
+                ['pharmacy_id' => $pharmacy->id, 'medicine_id' => $medicine->id], // شرط المطابقة
+                ['available_quantity' => $itemData['quantity'], 'price' => $itemData['price']] // القيم المحدثة
             );
         }
     }
-    return response()->json(['success' => true, 'message' => 'تمت المزامنة بنجاح']);
+    return response()->json(['success' => true, 'message' => 'تمت المزامنة بنجاح']); // رد فوري
 }
 ```
 
