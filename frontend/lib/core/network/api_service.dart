@@ -57,6 +57,8 @@ class ApiService extends ChangeNotifier {
       if (response.statusCode == 200) {
         _authToken = body['data']['token'];
         _currentUser = UserModel.fromJson(body['data']['user']);
+        _cachedReservations.clear();
+        notifyListeners();
         return AuthResult(success: true, user: _currentUser);
       } else if (response.statusCode == 422) {
         String msg = body['message'] ?? 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
@@ -111,6 +113,8 @@ class ApiService extends ChangeNotifier {
       if (response.statusCode == 201) {
         _authToken = body['data']['token'];
         _currentUser = UserModel.fromJson(body['data']['user']);
+        _cachedReservations.clear();
+        notifyListeners();
         return AuthResult(success: true, user: _currentUser);
       } else if (response.statusCode == 422) {
         String msg = body['message'] ?? 'البيانات المدخلة غير صحيحة.';
@@ -193,6 +197,8 @@ class ApiService extends ChangeNotifier {
     } catch (_) {}
     _authToken = null;
     _currentUser = null;
+    _cachedReservations.clear();
+    notifyListeners();
   }
 
   /// البحث اللحظي عن الأدوية المتوفرة
@@ -253,14 +259,19 @@ class ApiService extends ChangeNotifier {
   /// جلب قائمة حجوزات المريض الحالية والسابقة مع المزامنة اللحظية
   Future<List<ReservationModel>> getMyReservations() async {
     try {
-      final codes = _cachedReservations
-          .map((r) => r.reservationCode)
-          .where((c) => c.isNotEmpty)
-          .toSet()
-          .join(',');
-      final endpoint = codes.isNotEmpty
-          ? '${AppConstants.myReservationsEndpoint}?codes=$codes'
-          : AppConstants.myReservationsEndpoint;
+      String endpoint = AppConstants.myReservationsEndpoint;
+      // إذا كان المستخدم ضيفاً غير مسجل، نمرر رموز الحجوزات الصادرة من هذا الجهاز فقط
+      if (!isAuthenticated) {
+        final codes = _cachedReservations
+            .map((r) => r.reservationCode)
+            .where((c) => c.isNotEmpty)
+            .toSet()
+            .join(',');
+        if (codes.isNotEmpty) {
+          endpoint = '${AppConstants.myReservationsEndpoint}?codes=$codes';
+        }
+      }
+
       final uri = Uri.parse('${AppConstants.baseUrl}$endpoint');
       final response = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
 
@@ -269,15 +280,9 @@ class ApiService extends ChangeNotifier {
         final List data = body['data'] ?? [];
         final items = data.map((item) => ReservationModel.fromJson(item)).toList();
 
-        // مزامنة وتحديث الكاش المحلي
-        for (final item in items) {
-          final index = _cachedReservations.indexWhere((r) => r.id == item.id || r.reservationCode == item.reservationCode);
-          if (index != -1) {
-            _cachedReservations[index] = item;
-          } else {
-            _cachedReservations.insert(0, item);
-          }
-        }
+        // تحديث الكاش بالكامل ليعكس حصرياً حجوزات المستخدم الحالي المستلمة من الخادم
+        _cachedReservations.clear();
+        _cachedReservations.addAll(items);
         notifyListeners();
         return _cachedReservations;
       }

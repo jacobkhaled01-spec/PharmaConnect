@@ -76,9 +76,15 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
 
     final results = await ApiService().getMyReservations();
 
+    // فحص دقيق ومباشر لكل حجز ما زال بحالة معلقة (pending) لضمان التقاط التغيير فوراً
+    final pendingItems = results.where((r) => r.status == 'pending').toList();
+    for (final pending in pendingItems) {
+      await ApiService().getReservationDetails(pending.reservationCode);
+    }
+
     if (mounted) {
       setState(() {
-        _reservations = results;
+        _reservations = ApiService().cachedReservations;
         _isLoading = false;
       });
     }

@@ -104,4 +104,60 @@ class ReservationConcurrencyTest extends TestCase
         // يظل المخزون 1 كما هو دون مساس
         $this->assertEquals(1, $stock->fresh()->available_quantity);
     }
+
+    public function test_my_reservations_strictly_isolates_user_data(): void
+    {
+        $userA = User::factory()->create(['role' => 'patient', 'name' => 'User A']);
+        $userB = User::factory()->create(['role' => 'patient', 'name' => 'User B']);
+        $pharmaUser = User::factory()->create(['role' => 'pharmacy']);
+
+        $pharmacy = Pharmacy::create([
+            'user_id' => $pharmaUser->id,
+            'name' => 'صيدلية الأمل',
+            'license_number' => 'PH-004',
+            'phone' => '777999888',
+            'address' => 'صنعاء',
+            'is_active' => true,
+            'is_verified' => true,
+        ]);
+
+        $medicine = Medicine::create([
+            'trade_name' => 'Panadol Extra',
+            'scientific_name' => 'Paracetamol',
+        ]);
+
+        $stock = PharmacyMedicine::create([
+            'pharmacy_id' => $pharmacy->id,
+            'medicine_id' => $medicine->id,
+            'available_quantity' => 10,
+            'price' => 500.00,
+            'status' => 'available',
+        ]);
+
+        // User A makes a reservation
+        Sanctum::actingAs($userA);
+        $this->postJson('/api/v1/reservations', [
+            'pharmacy_medicine_id' => $stock->id,
+            'quantity' => 1,
+        ])->assertStatus(201);
+
+        // User A checks reservations: count is 1
+        $resA = $this->getJson('/api/v1/reservations/my');
+        $resA->assertStatus(200)
+            ->assertJsonPath('count', 1);
+
+        // User B (new user) logs in and checks reservations: count must be 0!
+        Sanctum::actingAs($userB);
+        $resB = $this->getJson('/api/v1/reservations/my');
+        $resB->assertStatus(200)
+            ->assertJsonPath('count', 0)
+            ->assertJsonCount(0, 'data');
+
+        // Unauthenticated guest checks reservations without codes: must receive 0 (not 20 random items!)
+        $this->app['auth']->forgetGuards();
+        $resGuest = $this->getJson('/api/v1/reservations/my');
+        $resGuest->assertStatus(200)
+            ->assertJsonPath('count', 0)
+            ->assertJsonCount(0, 'data');
+    }
 }

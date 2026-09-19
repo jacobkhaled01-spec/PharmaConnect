@@ -32,23 +32,27 @@ class ReservationApiController extends Controller
 
         $user = $request->user();
         if (! $user) {
-            $patientName = ! empty($validated['patient_name']) ? trim($validated['patient_name']) : 'مريض مباشر';
-            $patientPhone = ! empty($validated['patient_phone']) ? trim($validated['patient_phone']) : '+967 770 000 000';
-            $phoneClean = preg_replace('/[^0-9]/', '', $patientPhone);
-            $email = 'patient_'.($phoneClean ?: uniqid()).'@pharmaconnect.ye';
+            $patientName = ! empty($validated['patient_name']) ? trim($validated['patient_name']) : 'مريض زائر';
+            $patientPhone = ! empty($validated['patient_phone']) ? trim($validated['patient_phone']) : null;
 
-            $user = User::firstOrCreate(
-                ['phone' => $patientPhone],
-                [
+            if ($patientPhone) {
+                $cleanPhone = preg_replace('/[^0-9]/', '', $patientPhone);
+                $user = User::where('phone', $patientPhone)
+                    ->orWhere('phone', $cleanPhone)
+                    ->first();
+            }
+
+            if (! $user) {
+                $uniqueGuestId = uniqid();
+                $email = 'guest_'.$uniqueGuestId.'@pharmaconnect.ye';
+
+                $user = User::create([
                     'name' => $patientName,
+                    'phone' => $patientPhone,
                     'email' => $email,
                     'role' => 'patient',
-                    'password' => bcrypt('password123'),
-                ]
-            );
-
-            if (! empty($validated['patient_name']) && $user->name !== $patientName) {
-                $user->update(['name' => $patientName]);
+                    'password' => bcrypt(uniqid('guest_pwd_', true)),
+                ]);
             }
         }
         $userId = $user->id;
@@ -82,7 +86,19 @@ class ReservationApiController extends Controller
      */
     public function myReservations(Request $request): JsonResponse
     {
-        // 1. إذا كان التطبيق يمرر رموز حجوزاته المخزنة محلياً
+        // 1. الأولوية المطلقة للمستخدم المصادق عبر التوكن (Bearer Token)
+        $user = $request->user();
+        if ($user) {
+            $reservations = $this->reservationService->getUserReservations($user->id);
+
+            return response()->json([
+                'success' => true,
+                'count' => $reservations->count(),
+                'data' => ReservationResource::collection($reservations),
+            ]);
+        }
+
+        // 2. إذا كان زائراً ويمتلك رموز حجز محددة خاصة بجهازه
         $codes = $request->query('codes');
         if ($codes) {
             $codeList = array_filter(array_map('trim', explode(',', $codes)));
@@ -100,37 +116,32 @@ class ReservationApiController extends Controller
             }
         }
 
-        // 2. إذا كان هناك رقم هاتف
-        $user = $request->user();
+        // 3. إذا كان زائراً يستعلم برقم هاتفه
         $phone = $request->query('phone');
-        if (! $user && $phone) {
+        if ($phone) {
             $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
-            $user = User::where('phone', $phone)
-                ->orWhere('phone', 'like', "%{$cleanPhone}%")
-                ->first();
+            if (! empty($cleanPhone)) {
+                $foundUser = User::where('phone', $phone)
+                    ->orWhere('phone', $cleanPhone)
+                    ->first();
+
+                if ($foundUser) {
+                    $reservations = $this->reservationService->getUserReservations($foundUser->id);
+
+                    return response()->json([
+                        'success' => true,
+                        'count' => $reservations->count(),
+                        'data' => ReservationResource::collection($reservations),
+                    ]);
+                }
+            }
         }
 
-        // 3. مستخدم مصادق
-        if ($user) {
-            $reservations = $this->reservationService->getUserReservations($user->id);
-
-            return response()->json([
-                'success' => true,
-                'count' => $reservations->count(),
-                'data' => ReservationResource::collection($reservations),
-            ]);
-        }
-
-        // 4. كحل افتراضي للضيوف: استرجاع أحدث الحجوزات النشطة
-        $reservations = Reservation::with(['pharmacy', 'reservationItems.pharmacyMedicine.medicine'])
-            ->latest()
-            ->take(20)
-            ->get();
-
+        // 4. إذا لم يكن مسجلاً وليس لديه أكواد أو هاتف: إرجاع قائمة فارغة بدلاً من حجوزات الآخرين
         return response()->json([
             'success' => true,
-            'count' => $reservations->count(),
-            'data' => ReservationResource::collection($reservations),
+            'count' => 0,
+            'data' => [],
         ]);
     }
 
