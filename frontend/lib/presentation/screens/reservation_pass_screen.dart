@@ -56,14 +56,26 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
 
   Future<void> _checkServerStatus() async {
     final prevStatus = _reservation.status;
-    final fresh = await ApiService().getReservationDetails(_reservation.reservationCode);
+    var fresh = await ApiService().getReservationDetails(_reservation.reservationCode);
+
+    // في حال تعذر العثور على الحجز برمز محلي مؤقت، نستعلم قائمة حجوزات المريض من الخادم للربط بالرمز الحقيقي
+    if (fresh == null) {
+      final myReservations = await ApiService().getMyReservations();
+      for (final r in myReservations) {
+        if (r.pharmacy.id == _reservation.pharmacy.id || r.pharmacy.name == _reservation.pharmacy.name) {
+          fresh = r;
+          break;
+        }
+      }
+    }
+
     if (fresh != null && mounted) {
       setState(() {
-        _reservation = fresh;
+        _reservation = fresh!;
         _remainingSeconds = fresh.currentRemainingSeconds;
       });
 
-      if (prevStatus == 'pending' && fresh.status == 'completed') {
+      if ((prevStatus == 'pending' || prevStatus != 'completed') && fresh.status == 'completed') {
         _timer?.cancel();
         _pollTimer?.cancel();
         HapticFeedback.heavyImpact();

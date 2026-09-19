@@ -364,11 +364,11 @@ class ApiService extends ChangeNotifier {
               if (patientPhone != null && patientPhone.isNotEmpty) 'patient_phone': patientPhone,
             }),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(const Duration(seconds: 25));
 
       debugPrint('[ApiService] createReservation status: ${response.statusCode}');
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final body = json.decode(response.body);
         final created = ReservationModel.fromJson(body['data']);
         _cachedReservations.insert(0, created);
@@ -379,6 +379,18 @@ class ApiService extends ChangeNotifier {
     } catch (e) {
       debugPrint('[ApiService] createReservation exception: $e');
     }
+
+    // فحص ما إذا كان الطلب قد نُفذ بالفعل بالخادم قبل استخدام المحاكاة
+    try {
+      final currentList = await getMyReservations();
+      if (currentList.isNotEmpty) {
+        for (final r in currentList) {
+          if (r.pharmacy.id == (pharmacy?.id ?? -1) && r.status == 'pending') {
+            return r;
+          }
+        }
+      }
+    } catch (_) {}
 
     _stockDeductions[stockId] = (_stockDeductions[stockId] ?? 0) + quantity;
 
