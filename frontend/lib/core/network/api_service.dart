@@ -259,18 +259,14 @@ class ApiService extends ChangeNotifier {
   /// جلب قائمة حجوزات المريض الحالية والسابقة مع المزامنة اللحظية
   Future<List<ReservationModel>> getMyReservations() async {
     try {
-      String endpoint = AppConstants.myReservationsEndpoint;
-      // إذا كان المستخدم ضيفاً غير مسجل، نمرر رموز الحجوزات الصادرة من هذا الجهاز فقط
-      if (!isAuthenticated) {
-        final codes = _cachedReservations
-            .map((r) => r.reservationCode)
-            .where((c) => c.isNotEmpty)
-            .toSet()
-            .join(',');
-        if (codes.isNotEmpty) {
-          endpoint = '${AppConstants.myReservationsEndpoint}?codes=$codes';
-        }
-      }
+      final codes = _cachedReservations
+          .map((r) => r.reservationCode)
+          .where((c) => c.isNotEmpty)
+          .toSet()
+          .join(',');
+      final endpoint = codes.isNotEmpty
+          ? '${AppConstants.myReservationsEndpoint}?codes=$codes'
+          : AppConstants.myReservationsEndpoint;
 
       final uri = Uri.parse('${AppConstants.baseUrl}$endpoint');
       final response = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
@@ -280,9 +276,28 @@ class ApiService extends ChangeNotifier {
         final List data = body['data'] ?? [];
         final items = data.map((item) => ReservationModel.fromJson(item)).toList();
 
-        // تحديث الكاش بالكامل ليعكس حصرياً حجوزات المستخدم الحالي المستلمة من الخادم
-        _cachedReservations.clear();
-        _cachedReservations.addAll(items);
+        if (items.isNotEmpty) {
+          // دمج وتحديث الحجوزات مع المحافظة على أي حجز نشط
+          for (final item in items) {
+            final idx = _cachedReservations.indexWhere((r) => r.id == item.id || r.reservationCode == item.reservationCode);
+            if (idx != -1) {
+              _cachedReservations[idx] = item;
+            } else {
+              _cachedReservations.insert(0, item);
+            }
+          }
+          if (isAuthenticated) {
+            final serverCodes = items.map((i) => i.reservationCode).toSet();
+            _cachedReservations.removeWhere((r) =>
+                !serverCodes.contains(r.reservationCode) &&
+                (r.createdAt == null || DateTime.now().difference(r.createdAt!).inMinutes > 3));
+          }
+        } else if (isAuthenticated) {
+          // إذا كان المستخدم مصادقاً ولم يعد الخادم بأي حجوزات، نحذف فقط الحجوزات القديمة
+          // ولا نحذف الحجز المنشأ حديثاً (خلال آخر 3 دقائق) لمنع اختفائه قبل اكتمال المزامنة
+          _cachedReservations.removeWhere((r) =>
+              r.createdAt != null && DateTime.now().difference(r.createdAt!).inMinutes > 3);
+        }
         notifyListeners();
         return _cachedReservations;
       }

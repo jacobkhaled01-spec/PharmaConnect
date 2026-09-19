@@ -18,6 +18,29 @@ class ReservationApiController extends Controller
     ) {}
 
     /**
+     * استخراج هوية المستخدم المصادق سواء عبر Sanctum Middleware أو Bearer Token الممرر
+     */
+    protected function resolveUser(Request $request): ?User
+    {
+        if ($user = $request->user()) {
+            return $user;
+        }
+
+        if ($user = auth('sanctum')->user()) {
+            return $user;
+        }
+
+        if ($bearerToken = $request->bearerToken()) {
+            $accessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($bearerToken);
+            if ($accessToken && $accessToken->tokenable instanceof User) {
+                return $accessToken->tokenable;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * إنشاء حجز مؤقت للدواء محمي بالتزامن وقفل الصفوف
      */
     public function store(Request $request): JsonResponse
@@ -30,7 +53,7 @@ class ReservationApiController extends Controller
             'patient_phone' => 'nullable|string|max:30',
         ]);
 
-        $user = $request->user();
+        $user = $this->resolveUser($request);
         if (! $user) {
             $patientName = ! empty($validated['patient_name']) ? trim($validated['patient_name']) : 'مريض زائر';
             $patientPhone = ! empty($validated['patient_phone']) ? trim($validated['patient_phone']) : null;
@@ -86,9 +109,25 @@ class ReservationApiController extends Controller
      */
     public function myReservations(Request $request): JsonResponse
     {
-        // 1. الأولوية المطلقة للمستخدم المصادق عبر التوكن (Bearer Token)
-        $user = $request->user();
+        // 1. الأولوية المطلقة للمستخدم المصادق (سواء عبر جلسة Sanctum أو Bearer Token)
+        $user = $this->resolveUser($request);
         if ($user) {
+            $codes = $request->query('codes');
+            if ($codes) {
+                $codeList = array_filter(array_map('trim', explode(',', $codes)));
+                if (! empty($codeList)) {
+                    Reservation::whereIn('reservation_code', $codeList)
+                        ->where(function ($q) {
+                            $q->whereNull('user_id')
+                                ->orWhere('user_id', 0)
+                                ->orWhereHas('user', function ($uq) {
+                                    $uq->where('email', 'like', 'guest_%');
+                                });
+                        })
+                        ->update(['user_id' => $user->id]);
+                }
+            }
+
             $reservations = $this->reservationService->getUserReservations($user->id);
 
             return response()->json([
