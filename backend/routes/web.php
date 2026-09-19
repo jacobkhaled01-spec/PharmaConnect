@@ -19,7 +19,7 @@ Route::get('/', function () {
 // مسارات المصادقة للويب
 Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [WebAuthController::class, 'login'])->name('login.post');
-Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
+Route::match(['get', 'post'], '/logout', [WebAuthController::class, 'logout'])->name('logout');
 
 // مسارات بوابة الصيدلية (محمية بالجلسات)
 Route::middleware('auth')->prefix('pharmacy')->name('pharmacy.')->group(function () {

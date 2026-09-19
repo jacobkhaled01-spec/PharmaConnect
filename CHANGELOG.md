@@ -2,6 +2,27 @@
 
 جميع التعديلات والخطوات البرمجية والتوثيقية لمشروع الصيدلية (خادم وعميل).
 
+## [2.21.0] - 2026-09-19
+### أُصلح وحُسّن وطُوّر (Fixed, Enhanced & Implemented)
+- **المزامنة اللحظية الشاملة لحالة تسليم الدواء (Real-time Medicine Pickup Sync):**
+  - تصحيح خطأ استعلام العلاقات في نقطة نهاية الحجز بالرمز `/api/v1/reservations/{codeOrId}` بملف [`ReservationApiController.php`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/backend/app/Http/Controllers/Api/V1/ReservationApiController.php) من `items.medicine` إلى `reservationItems.pharmacyMedicine.medicine` وإضافة علاقة `medicine()` على موديل [`ReservationItem.php`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/backend/app/Models/ReservationItem.php).
+  - إضافة دعم استعلام الحجوزات بالرموز المحفوظة محلياً عبر المعامل `?codes=...` في نقطة `/api/v1/reservations/my` لضمان إرجاع كافة حجوزات الضيوف والهواتف المختلفة بدقة 100%.
+  - تفعيل مؤقت المزامنة الدورية اللحظية (Real-time Polling كل 2.5 ثانية) في شاشة التذكرة [`ReservationPassScreen`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/frontend/lib/presentation/screens/reservation_pass_screen.dart): فور تأكيد الصيدلي في المتصفح يتم إلغاء مؤقت الـ TTL فوراً وإظهار شارة وبطاقة النجاح الزمردية: "تم استلام الدواء بنجاح والمحاسبة ✓" مع تنبيه اهتزازي ولمسي فوري.
+  - إضافة استماع تلقائي ومزامنة خلفية صامتة كل 3.5 ثوانٍ في شاشة [`MyReservationsScreen`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/frontend/lib/presentation/screens/my_reservations_screen.dart) لضمان تحديث الحالات فور تغيرها دون الحاجة للريفرش اليدوي.
+
+- **حل مشكلة ظهور الحجز باسم "صيدلية الشفاء" عند الحجز من صيدليات مختلفة:**
+  - رفع مهلة انتظار استجابة الخادم المركزي في [`ApiService.createReservation`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/frontend/lib/core/network/api_service.dart) من 4 ثوانٍ إلى 15 ثانية كاملة لاستيعاب بطء الشبكات أو فترات استيقاظ السيرفر السحابي (Cold Start).
+  - تمرير بيانات الصيدلية والدواء والسعر الفعلي المختار من [`MedicineDetailsScreen`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/frontend/lib/presentation/screens/medicine_details_screen.dart) إلى `createReservation` لضمان اعتماد الصيدلية الحقيقية حتى في أقصى حالات انقطاع الشبكة.
+
+- **القضاء التام على خطأ `419 | PAGE EXPIRED` عند تسجيل الخروج أو انتهاء وقت الجلسة:**
+  - استثناء مسار `logout` من فحص الـ CSRF في [`bootstrap/app.php`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/backend/bootstrap/app.php).
+  - دعم كلا طريقتي `GET` و `POST` لمسار `/logout` في [`routes/web.php`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/backend/routes/web.php).
+  - التقاط استثناء `TokenMismatchException` وإعادة توجيه المستخدم لصفحة تسجيل الدخول مع رسالة تنبيه واضحة بدلاً من إظهار شاشة الخطأ السوداء.
+
+- **تفعيل المزامنة الحية التلقائية في لوحة تحكم الصيدلية (Auto-Refresh Live Polling):**
+  - إضافة شريط المزامنة الحية مع نقطة خضراء نابضة في صفحة [`reservations.blade.php`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/backend/resources/views/pharmacy/reservations.blade.php).
+  - إضافة كود AJAX ذكي يقوم بجلب وتحديث جدول الحجوزات الواردة تلقائياً كل 5 ثوانٍ، مما يتيح للصيدلي رؤية طلبات الحجز الجديدة فور صدورها من تطبيق الموبايل دون الحاجة لإعادة تحميل الصفحة يدوياً (F5).
+
 ## [2.20.0] - 2026-09-19
 ### أُصلح وحُسّن (Fixed & Enhanced)
 - **معالجة تحذير أمان النماذج في المتصفح ("The information you're about to submit is not secure"):**

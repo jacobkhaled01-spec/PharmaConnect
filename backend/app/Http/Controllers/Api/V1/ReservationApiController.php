@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ReservationResource;
+use App\Models\Reservation;
 use App\Models\User;
 use App\Services\ReservationService;
 use Exception;
@@ -81,9 +82,50 @@ class ReservationApiController extends Controller
      */
     public function myReservations(Request $request): JsonResponse
     {
-        $user = $request->user() ?? User::where('role', 'patient')->first();
-        $userId = $user ? $user->id : 0;
-        $reservations = $this->reservationService->getUserReservations($userId);
+        // 1. إذا كان التطبيق يمرر رموز حجوزاته المخزنة محلياً
+        $codes = $request->query('codes');
+        if ($codes) {
+            $codeList = array_filter(array_map('trim', explode(',', $codes)));
+            if (! empty($codeList)) {
+                $reservations = Reservation::with(['pharmacy', 'reservationItems.pharmacyMedicine.medicine'])
+                    ->whereIn('reservation_code', $codeList)
+                    ->latest()
+                    ->get();
+
+                return response()->json([
+                    'success' => true,
+                    'count' => $reservations->count(),
+                    'data' => ReservationResource::collection($reservations),
+                ]);
+            }
+        }
+
+        // 2. إذا كان هناك رقم هاتف
+        $user = $request->user();
+        $phone = $request->query('phone');
+        if (! $user && $phone) {
+            $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
+            $user = User::where('phone', $phone)
+                ->orWhere('phone', 'like', "%{$cleanPhone}%")
+                ->first();
+        }
+
+        // 3. مستخدم مصادق
+        if ($user) {
+            $reservations = $this->reservationService->getUserReservations($user->id);
+
+            return response()->json([
+                'success' => true,
+                'count' => $reservations->count(),
+                'data' => ReservationResource::collection($reservations),
+            ]);
+        }
+
+        // 4. كحل افتراضي للضيوف: استرجاع أحدث الحجوزات النشطة
+        $reservations = Reservation::with(['pharmacy', 'reservationItems.pharmacyMedicine.medicine'])
+            ->latest()
+            ->take(20)
+            ->get();
 
         return response()->json([
             'success' => true,
@@ -120,7 +162,7 @@ class ReservationApiController extends Controller
      */
     public function show(string $codeOrId): JsonResponse
     {
-        $reservation = \App\Models\Reservation::with(['pharmacy', 'items.medicine'])
+        $reservation = Reservation::with(['pharmacy', 'reservationItems.pharmacyMedicine.medicine'])
             ->where('reservation_code', $codeOrId)
             ->orWhere('id', is_numeric($codeOrId) ? (int) $codeOrId : 0)
             ->first();

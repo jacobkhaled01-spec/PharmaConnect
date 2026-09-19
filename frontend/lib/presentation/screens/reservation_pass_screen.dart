@@ -20,6 +20,7 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
   late ReservationModel _reservation;
   late int _remainingSeconds;
   Timer? _timer;
+  Timer? _pollTimer;
   bool _isRefreshing = false;
 
   @override
@@ -28,14 +29,33 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
     _reservation = widget.reservation;
     _remainingSeconds = _reservation.currentRemainingSeconds;
 
-    if (_reservation.status == 'pending' && _remainingSeconds > 0) {
-      _startTimer();
+    if (_reservation.status == 'pending') {
+      if (_remainingSeconds > 0) {
+        _startTimer();
+      }
+      _startPolling();
     }
 
     _checkServerStatus();
   }
 
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 2, milliseconds: 500), (timer) async {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_reservation.status == 'pending') {
+        await _checkServerStatus();
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
   Future<void> _checkServerStatus() async {
+    final prevStatus = _reservation.status;
     final fresh = await ApiService().getReservationDetails(_reservation.reservationCode);
     if (fresh != null && mounted) {
       setState(() {
@@ -43,8 +63,33 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
         _remainingSeconds = fresh.currentRemainingSeconds;
       });
 
-      if (_reservation.status != 'pending' || _remainingSeconds <= 0) {
+      if (prevStatus == 'pending' && fresh.status == 'completed') {
         _timer?.cancel();
+        _pollTimer?.cancel();
+        HapticFeedback.heavyImpact();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.task_alt_rounded, color: Colors.white, size: 24),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '🎉 تهانينا! أكد الصيدلي تسليم الدواء واستلام الحساب بنجاح.',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF059669),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      } else if (_reservation.status != 'pending' || _remainingSeconds <= 0) {
+        _timer?.cancel();
+        _pollTimer?.cancel();
       }
     }
   }
@@ -69,6 +114,7 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _pollTimer?.cancel();
     super.dispose();
   }
 
@@ -381,6 +427,37 @@ class _ReservationPassScreenState extends State<ReservationPassScreen> {
                                     color: isExpired
                                         ? PharmaTheme.statusDanger
                                         : (isDark ? PharmaTheme.darkNeonGreen : PharmaTheme.primaryGreenDark),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (isCompleted)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF064E3B).withAlpha(160) : const Color(0xFFD1FAE5),
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(
+                                color: isDark ? PharmaTheme.darkNeonGreen : const Color(0xFF10B981),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  size: 22,
+                                  color: isDark ? PharmaTheme.darkNeonGreen : const Color(0xFF059669),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'تم استلام الدواء بنجاح والمحاسبة ✓',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 15,
+                                    color: isDark ? PharmaTheme.darkNeonGreen : const Color(0xFF065F46),
                                   ),
                                 ),
                               ],

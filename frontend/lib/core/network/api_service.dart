@@ -248,17 +248,27 @@ class ApiService extends ChangeNotifier {
 
   final List<ReservationModel> _cachedReservations = [];
 
-  /// جلب قائمة حجوزات المريض الحالية والسابقة
+  List<ReservationModel> get cachedReservations => List.unmodifiable(_cachedReservations);
+
+  /// جلب قائمة حجوزات المريض الحالية والسابقة مع المزامنة اللحظية
   Future<List<ReservationModel>> getMyReservations() async {
     try {
-      final uri = Uri.parse('${AppConstants.baseUrl}${AppConstants.myReservationsEndpoint}');
-      final response = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
+      final codes = _cachedReservations
+          .map((r) => r.reservationCode)
+          .where((c) => c.isNotEmpty)
+          .toSet()
+          .join(',');
+      final endpoint = codes.isNotEmpty
+          ? '${AppConstants.myReservationsEndpoint}?codes=$codes'
+          : AppConstants.myReservationsEndpoint;
+      final uri = Uri.parse('${AppConstants.baseUrl}$endpoint');
+      final response = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
         final List data = body['data'] ?? [];
         final items = data.map((item) => ReservationModel.fromJson(item)).toList();
-        
+
         // مزامنة وتحديث الكاش المحلي
         for (final item in items) {
           final index = _cachedReservations.indexWhere((r) => r.id == item.id || r.reservationCode == item.reservationCode);
@@ -271,8 +281,8 @@ class ApiService extends ChangeNotifier {
         notifyListeners();
         return _cachedReservations;
       }
-    } catch (_) {
-      // Fallback
+    } catch (e) {
+      debugPrint('[ApiService] getMyReservations warning: $e');
     }
 
     return _cachedReservations;
@@ -282,7 +292,7 @@ class ApiService extends ChangeNotifier {
   Future<ReservationModel?> getReservationDetails(String codeOrId) async {
     try {
       final uri = Uri.parse('${AppConstants.baseUrl}${AppConstants.reservationsEndpoint}/$codeOrId');
-      final response = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
+      final response = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
@@ -294,11 +304,12 @@ class ApiService extends ChangeNotifier {
           } else {
             _cachedReservations.insert(0, updated);
           }
+          notifyListeners();
           return updated;
         }
       }
-    } catch (_) {
-      // Return cached if exists
+    } catch (e) {
+      debugPrint('[ApiService] getReservationDetails warning: $e');
     }
 
     final cachedIndex = _cachedReservations.indexWhere((r) => r.reservationCode == codeOrId || r.id.toString() == codeOrId);
@@ -315,6 +326,9 @@ class ApiService extends ChangeNotifier {
     int ttlMinutes = 30,
     String? patientName,
     String? patientPhone,
+    PharmacyInfo? pharmacy,
+    MedicineInfo? medicine,
+    double unitPrice = 0.0,
   }) async {
     try {
       final uri = Uri.parse('${AppConstants.baseUrl}${AppConstants.reservationsEndpoint}');
@@ -330,7 +344,9 @@ class ApiService extends ChangeNotifier {
               if (patientPhone != null && patientPhone.isNotEmpty) 'patient_phone': patientPhone,
             }),
           )
-          .timeout(const Duration(seconds: 4));
+          .timeout(const Duration(seconds: 15));
+
+      debugPrint('[ApiService] createReservation status: ${response.statusCode}');
 
       if (response.statusCode == 201) {
         final body = json.decode(response.body);
@@ -340,39 +356,42 @@ class ApiService extends ChangeNotifier {
         notifyListeners();
         return created;
       }
-    } catch (_) {
-      // Fallback
+    } catch (e) {
+      debugPrint('[ApiService] createReservation exception: $e');
     }
 
     _stockDeductions[stockId] = (_stockDeductions[stockId] ?? 0) + quantity;
 
-    // نموذج حجز مؤقت جاهز
+    final resolvedPharmacy = pharmacy ??
+        PharmacyInfo(
+          id: 1,
+          name: 'صيدلية معتمدة في النظام',
+          phone: '+967770000000',
+          address: 'صنعاء - الجمهورية اليمنية',
+          latitude: 15.3500,
+          longitude: 44.2000,
+        );
+
+    final resolvedItem = ReservationItemModel(
+      medicineName: medicine?.tradeName ?? 'دواء محجوز',
+      scientificName: medicine?.scientificName ?? 'مستحضر طبي',
+      quantity: quantity,
+      unitPrice: unitPrice > 0 ? unitPrice : 1500.0,
+      subtotal: (unitPrice > 0 ? unitPrice : 1500.0) * quantity,
+    );
+
+    // نموذج حجز مؤقت يعتمد على الصيدلية والدواء المحددين فعلياً
     final fallbackRes = ReservationModel(
       id: DateTime.now().millisecondsSinceEpoch,
       reservationCode: 'RES-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
       status: 'pending',
-      totalAmount: 1200.0 * quantity,
+      totalAmount: resolvedItem.subtotal,
       currency: 'YER',
       expiresAt: DateTime.now().add(Duration(minutes: ttlMinutes)),
       ttlSecondsRemaining: ttlMinutes * 60,
       isExpired: false,
-      pharmacy: PharmacyInfo(
-        id: 1,
-        name: 'صيدلية الشفاء المركزية',
-        phone: '+967771111111',
-        address: 'شارع حدة - صنعاء',
-        latitude: 15.3268,
-        longitude: 44.1951,
-      ),
-      items: [
-        ReservationItemModel(
-          medicineName: 'Panadol Extra',
-          scientificName: 'Paracetamol + Caffeine',
-          quantity: quantity,
-          unitPrice: 1200.0,
-          subtotal: 1200.0 * quantity,
-        ),
-      ],
+      pharmacy: resolvedPharmacy,
+      items: [resolvedItem],
       createdAt: DateTime.now(),
     );
 

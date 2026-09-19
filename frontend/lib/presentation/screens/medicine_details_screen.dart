@@ -52,6 +52,9 @@ class _MedicineDetailsScreenState extends State<MedicineDetailsScreen> {
       ttlMinutes: 30,
       patientName: _nameController.text.trim(),
       patientPhone: _phoneController.text.trim(),
+      pharmacy: widget.item.pharmacy,
+      medicine: widget.item.medicine,
+      unitPrice: widget.item.price,
     );
 
     if (mounted) {

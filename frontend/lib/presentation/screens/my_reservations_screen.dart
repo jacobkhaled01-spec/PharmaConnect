@@ -16,11 +16,18 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
   List<ReservationModel> _reservations = [];
   bool _isLoading = true;
   Timer? _ticker;
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
-    _loadReservations();
+    _reservations = ApiService().cachedReservations;
+    _isLoading = _reservations.isEmpty;
+    ApiService().addListener(_onApiServiceChanged);
+
+    _loadReservations(silent: _reservations.isNotEmpty);
+
+    // تحديث عداد الثواني محلياً كل ثانية
     _ticker = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
@@ -30,18 +37,42 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
         setState(() {});
       }
     });
+
+    // مزامنة صامتة مع الخادم كل 3.5 ثوانٍ طالما توجد طلبات معلقة
+    _pollTimer = Timer.periodic(const Duration(milliseconds: 3500), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_reservations.any((r) => r.status == 'pending')) {
+        _loadReservations(silent: true);
+      }
+    });
+  }
+
+  void _onApiServiceChanged() {
+    if (mounted) {
+      setState(() {
+        _reservations = ApiService().cachedReservations;
+        if (_reservations.isNotEmpty) _isLoading = false;
+      });
+    }
   }
 
   @override
   void dispose() {
+    ApiService().removeListener(_onApiServiceChanged);
     _ticker?.cancel();
+    _pollTimer?.cancel();
     super.dispose();
   }
 
-  Future<void> _loadReservations() async {
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> _loadReservations({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     final results = await ApiService().getMyReservations();
 

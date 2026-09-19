@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class ReservationItem extends Model
 {
@@ -33,5 +34,10 @@ class ReservationItem extends Model
     public function pharmacyMedicine(): BelongsTo
     {
         return $this->belongsTo(PharmacyMedicine::class);
+    }
+
+    public function medicine(): HasOneThrough
+    {
+        return $this->hasOneThrough(Medicine::class, PharmacyMedicine::class, 'id', 'id', 'pharmacy_medicine_id', 'medicine_id');
     }
 }
