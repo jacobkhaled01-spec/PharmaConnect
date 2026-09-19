@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PharmaConnect | العرض التقديمي الأكاديمي للمناقشة</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0D9488;
+      --primary-dark: #064E3B;
+      --primary-emerald: #059669;
+      --accent: #10B981;
+      --accent-mint: #D1FAE5;
+      --bg-dark: #0F172A;
+      --bg-surface: #1E293B;
+      --bg-card: #FFFFFF;
+      --text-main: #0F172A;
+      --text-light: #F8FAFC;
+      --text-muted: #64748B;
+      --border: #E2E8F0;
+      --danger: #EF4444;
+      --warning: #F59E0B;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-light);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Top Progress Bar */
+    .progress-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      width: 10%;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Header Bar */
+    header {
+      padding: 12px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      z-index: 100;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-badge {
+      background: linear-gradient(135deg, var(--primary-emerald), var(--primary));
+      color: white;
+      font-weight: 900;
+      padding: 6px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35);
+    }
+    .brand-title {
+      font-size: 15px;
+      color: #94A3B8;
+      font-weight: 600;
+    }
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      transform: translateY(-1px);
+    }
+    .btn-primary {
+      background: var(--primary-emerald);
+      border-color: var(--accent);
+    }
+    .btn-primary:hover {
+      background: var(--primary);
+    }
+
+    /* Slides Stage */
+    .deck-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+      position: relative;
+    }
+
+    .slide {
+      width: 100%;
+      max-width: 1240px;
+      height: calc(100vh - 160px);
+      max-height: 720px;
+      background: #FFFFFF;
+      color: var(--text-main);
+      border-radius: 24px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      display: none;
+      flex-direction: column;
+      padding: 36px 44px;
+      position: relative;
+      animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow-y: auto;
+    }
+    .slide.active {
+      display: flex;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: scale(0.97) translateY(12px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Slide Header */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 16px;
+    }
+    .slide-category {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .slide-title {
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--bg-dark);
+      line-height: 1.25;
+    }
+    .slide-speaker {
+      background: var(--accent-mint);
+      color: var(--primary-dark);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    /* Slide Body Grid */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      flex: 1;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      flex: 1;
+    }
+
+    .card {
+      background: #F8FAFC;
+      border: 1.5px solid var(--border);
+      border-radius: 18px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s;
+    }
+    .card:hover {
+      border-color: var(--primary);
+    }
+    .card-accent {
+      background: #F0FDF4;
+      border-color: #86EFAC;
+    }
+    .card-danger {
+      background: #FEF2F2;
+      border-color: #FECACA;
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title-danger { color: var(--danger); }
+    .card-title-primary { color: var(--primary-dark); }
+
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .bullet-item {
+      font-size: 14.5px;
+      line-height: 1.6;
+      color: #334155;
+      position: relative;
+      padding-right: 20px;
+    }
+    .bullet-item::before {
+      content: "•";
+      color: var(--primary);
+      font-size: 22px;
+      position: absolute;
+      right: 0;
+      top: -4px;
+      font-weight: 900;
+    }
+    .bullet-item strong {
+      color: var(--bg-dark);
+    }
+
+    /* Code Snippet */
+    .code-box {
+      background: #0F172A;
+      color: #38BDF8;
+      padding: 16px;
+      border-radius: 12px;
+      font-family: Consolas, monospace;
+      font-size: 13.5px;
+      direction: ltr;
+      text-align: left;
+      line-height: 1.5;
+      overflow-x: auto;
+      margin-top: 10px;
+      border: 1px solid #334155;
+    }
+    .code-comment { color: #94A3B8; }
+    .code-kw { color: #F472B6; font-weight: bold; }
+    .code-fn { color: #34D399; }
+
+    /* Title Slide Specifics */
+    .title-slide {
+      background: linear-gradient(135deg, #064E3B 0%, #0F172A 100%);
+      color: white;
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+      padding: 48px;
+      border: 2px solid var(--accent);
+    }
+    .title-badge {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid var(--accent);
+      color: #6EE7B7;
+      padding: 8px 20px;
+      border-radius: 30px;
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      display: inline-block;
+    }
+    .main-title {
+      font-size: 46px;
+      font-weight: 900;
+      color: #FFFFFF;
+      letter-spacing: -0.5px;
+      margin-bottom: 16px;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .sub-title {
+      font-size: 20px;
+      color: #A7F3D0;
+      max-width: 850px;
+      margin: 0 auto 36px;
+      line-height: 1.6;
+    }
+    .tech-stack-row {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 36px;
+    }
+    .tech-pill {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 8px 18px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #E2E8F0;
+    }
+
+    /* Tables */
+    .demo-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+    .demo-table th, .demo-table td {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      font-size: 13.5px;
+      text-align: right;
+    }
+    .demo-table th {
+      background: #F1F5F9;
+      color: var(--bg-dark);
+      font-weight: 800;
+    }
+    .demo-table tr:hover td {
+      background: #F8FAFC;
+    }
+
+    /* Footer Bar Controls */
+    footer {
+      padding: 12px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.9);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      z-index: 100;
+    }
+    .slide-counter {
+      font-size: 14px;
+      font-weight: 700;
+      color: #94A3B8;
+    }
+    .nav-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    /* Speaker Notes Modal */
+    .speaker-drawer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #020617;
+      color: #E2E8F0;
+      border-top: 3px solid var(--primary);
+      padding: 24px 36px;
+      max-height: 40vh;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 2000;
+      box-shadow: 0 -10px 30px rgba(0,0,0,0.7);
+    }
+    .speaker-drawer.open {
+      transform: translateY(0);
+    }
+    .speaker-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 8px;
+    }
+    .speaker-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .speaker-text {
+      font-size: 16px;
+      line-height: 1.8;
+      color: #F8FAFC;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Progress Top Bar -->
+  <div class="progress-container">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-badge">PharmaConnect ⚡</div>
+      <div class="brand-title">مشروع تخرج مقرر خادم وعميل (Level 4)</div>
+    </div>
+    <div class="header-controls">
+      <button class="btn" id="btnNotes" onclick="toggleSpeakerNotes()">🎙️ نص الإلقاء (S)</button>
+      <button class="btn" id="btnFullscreen" onclick="toggleFullscreen()">⛶ شاشة كاملة (F)</button>
+    </div>
+  </header>
+
+  <!-- Deck Container -->
+  <div class="deck-container">
+
+    <!-- SLIDE 1 -->
+    <div class="slide title-slide active" data-speaker="المتحدث 1: دقيقة واحدة">
+      <div class="title-badge">مشروع مناقشة المستوى الرابع — مقرر خادم وعميل</div>
+      <h1 class="main-title">نظام فارما-كونكت (PharmaConnect)</h1>
+      <p class="sub-title">منصة موزعة ذكية لتتبع وفرة الأدوية وإدارة المخزون متعدد الصيدليات بالحجز المؤقت المتزامن</p>
+      <div class="tech-stack-row">
+        <div class="tech-pill">Laravel 11 RESTful API</div>
+        <div class="tech-pill">Flutter 3 Cross-Platform Client</div>
+        <div class="tech-pill">3NF Relational Database</div>
+        <div class="tech-pill">Pessimistic Locking & Haversine</div>
+      </div>
+      <p style="color: #94A3B8; font-size: 14px;">إشراف ومناقشة: لجنة التحكيم الأكاديمية الموقرة  |  سبتمبر 2026</p>
+    </div>
+
+    <!-- SLIDE 2 -->
+    <div class="slide" data-speaker="المتحدث 1: دقيقة واحدة">
+      <div class="slide-header">
+        <div>
+          <div class="slide-category">المحور الأول: إطار البحث والدوافع</div>
+          <h2 class="slide-title">1. المشكلة الواقعية ودوافع بناء النظام الموزع</h2>
+        </div>
+        <div class="slide-speaker">المتحدث 1 (00:00 - 01:00)</div>
+      </div>
+      <div class="grid-2">
+        <div class="card card-danger">
+          <div class="card-title card-title-danger">⚠️ معاناة الواقع الصحي القائم</div>
+          <ul class="bullet-list">
+            <li class="bullet-item"><strong>أزمة البحث اليدوي العشوائي:</strong> هدر ما بين 45 إلى 120 دقيقة سيراً على الأقدام للبحث عن دواء حرج بين شوارع المدينة.</li>
+            <li class="bullet-item"><strong>عزلة الأنظمة الصيدلانية:</strong> الصيدليات تعمل كجزر معزولة بأنظمة محاسبية محلية مغلقة دون ربط مركزي.</li>
+            <li class="bullet-item"><strong>ظاهرة الاتصال الكاذب:</strong> تأكيد توفر الدواء شفهياً بالهاتف ثم بيعه لمريض آخر قبل وصول العميل.</li>
+            <li class="bullet-item"><strong>انعدام الشفافية في الأسعار:</strong> تباين أسعار نفس الصنف الدوائي بين صيدليات الحي الواحد.</li>
+          </ul>
+        </div>
+        <div class="card card-accent">
+          <div class="card-title card-title-primary">✨ حلول PharmaConnect الهندسية</div>
+          <ul class="bullet-list">
+            <li class="bullet-item"><strong>استعلام جغرافي كروي:</strong> استكشاف الصيدليات المتوفر لديها الدواء فورياً مع المسافة المحددة بالأمتار.</li>
+            <li class="bullet-item"><strong>حجز مؤقت عادل (30 دقيقة TTL):</strong> حماية حق المريض في الوصول وحق الصيدلي في تصريف الدواء دون تعطيله.</li>
+            <li class="bullet-item"><strong>حماية المخزون بنسبة 0% أخطاء:</strong> منع الـ Race Condition وقفل الصفوف تشاؤمياً.</li>
+            <li class="bullet-item"><strong>مرونة عالية (Resilience):</strong> عمل تطبيق العميل بسلاسة حتى في ظروف انقطاع أو بطء الإنترنت.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3 -->
+    <div class="slide" data-speaker="المتحدث 1: دقيقة ونصف">
+      <div class="slide-header">
+        <div>
+          <div class="slide-category">المحور الثاني: المعمارية ونمط النظم الموزعة</div>
+          <h2 class="slide-title">2. المعمارية الموزعة ثلاثية الطبقات (3-Tier Architecture)</h2>
+        </div>
+        <div class="slide-speaker">المتحدث 1 (01:00 - 02:30)</div>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title card-title-primary">📱 1. Presentation Tier</div>
+          <ul class="bullet-list">
+            <li class="bullet-item"><strong>تطبيق الهاتف (Flutter):</strong> تجربة لحظية وسريعة للبحث وحجز الدواء.</li>
+            <li class="bullet-item"><strong>بوابة الصيدلية (Web):</strong> واجهة إدارة المخزون وتأكيد الاستلام.</li>
+            <li class="bullet-item"><strong>أنظمة الكاشير (B2B):</strong> ربط مباشر مع نقاط البيع.</li>
+            <li class="bullet-item"><strong>بروتوكول موحد:</strong> Stateless JSON over HTTPS.</li>
+          </ul>
+        </div>
+        <div class="card card-accent">
+          <div class="card-title card-title-primary">⚙️ 2. Logic Tier (Laravel)</div>
+          <ul class="bullet-list">
+            <li class="bullet-item"><strong>RESTful API Gateway:</strong> توجيه وفحص كافة الطلبات.</li>
+            <li class="bullet-item"><strong>الأمان بـ Sanctum:</strong> مصادقة مشفرة بدون Sessions.</li>
+            <li class="bullet-item"><strong>محركات الخدمات:</strong> GeoSearchService و ReservationService.</li>
+            <li class="bullet-item"><strong>Repository Pattern:</strong> عزل الاستعلامات عن المنطق.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title card-title-primary">🗄️ 3. Data Tier (DB)</div>
+          <ul class="bullet-list">
+            <li class="bullet-item"><strong>قاعدة بيانات 3NF:</strong> تفادي التكرار وضمان التماسك.</li>
+            <li class="bullet-item"><strong>المعاملات الذرية (ACID):</strong> تنفيذ العمليات بأمان تام.</li>
+            <li class="bullet-item"><strong>قفل الصفوف:</strong> InnoDB Row-Level Locking.</li>
+            <li class="bullet-item"><strong>تكامل مرجعي:</strong> قيود المفاتيح الأجنبية الصارمة.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4 -->
+    <div class="slide" data-speaker="المتحدث 1: دقيقة ونصف">
+      <div class="slide-header">
+        <div>
+          <div class="slide-category">المحور الثالث: هندسة البيانات وتكامل النظم</div>
+          <h2 class="slide-title">3. هندسة البيانات والشكل المعياري الثالث (3NF Database)</h2>
+        </div>
+        <div class="slide-speaker">المتحدث 1 (02:30 - 04:00)</div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title card-title-primary">📋 الجداول الـ 7 الرئيسية في النظام</div>
+          <ul class="bullet-list">
+            <li class="bullet-item"><strong>users:</strong> إدارة هويات المرضى ومدراء الصيدليات والمشرفين (RBAC).</li>
+            <li class="bullet-item"><strong>pharmacies:</strong> بيانات الصيدلية، الهاتف، والإحداثيات الجغرافية (lat, lng).</li>
+            <li class="bullet-item"><strong>medicines:</strong> السجل القومي الموحد (الاسم التجاري والعلمي والعيار).</li>
+            <li class="bullet-item"><strong>pharmacy_medicines:</strong> وسيط الربط وإدارة المخزون والسعر لكل صيدلية.</li>
+            <li class="bullet-item"><strong>reservations & items:</strong> تذاكر الحجز والمهلة والأصناف والأسعار.</li>
+          </ul>
+        </div>
+        <div class="card card-accent">
+          <div class="card-title card-title-primary">💡 مبررات التصميم أمام اللجنة الأكاديمية</div>
+          <ul class="bullet-list">
+            <li class="bullet-item"><strong>انعدام التكرار (Zero Redundancy):</strong> معلومات الدواء تسجل مرة واحدة عالمياً ويربط بها مخزون كل صيدلية.</li>
+            <li class="bullet-item"><strong>استقلالية التسعير:</strong> كل صيدلية تملك كامل الحرية بتحديد كمياتها وأسعارها.</li>
+            <li class="bullet-item"><strong>دورة حياة الحجز الخماسية:</strong> pending ➔ confirmed ➔ completed / cancelled / expired.</li>
+            <li class="bullet-item"><strong>التكامل المرجعي:</strong> منع الحجوزات الوهمية أو العمليات غير المعرفة.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5 -->
+    <div class="slide" data-speaker="المتحدث 1: دقيقة ونصف">
+      <div class="slide-header">
+        <div>
+          <div class="slide-category">المحور الرابع: التزامن والخوارزميات الرياضية</div>
+          <h2 class="slide-title">4. حل معضلة التزامن والرياضيات الكروية (Concurrency & Math)</h2>
+        </div>
+        <div class="slide-speaker">المتحدث 1 (04:00 - 05:30)</div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title card-title-primary">🔒 منع الـ Race Condition بالقفل التشاؤمي</div>
+          <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 8px;">حماية المخزون من الحجز المزدوج إذا طلب مريضان آخر علبة في نفس الجزء من الثانية:</p>
+          <div class="code-box">
+<span class="code-comment">// ReservationService.php</span>
+<span class="code-kw">DB::transaction</span>(<span class="code-kw">function</span> () <span class="code-kw">use</span> ($stockId, $qty) {
+  $stock = PharmacyMedicine::<span class="code-fn">where</span>(<span class="code-kw">'id'</span>, $stockId)
+    -><span class="code-fn">lockForUpdate</span>() <span class="code-comment">// قفل الصف الحصري</span>
+    -><span class="code-fn">first</span>();
+
+  <span class="code-kw">if</span> ($stock->available_quantity < $qty) {
+    <span class="code-kw">throw new</span> Exception(<span class="code-kw">'الكمية لم تعد متوفرة'</span>);
+  }
+  $stock-><span class="code-fn">decrement</span>(<span class="code-kw">'available_quantity'</span>, $qty);
+});
+          </div>
+        </div>
+        <div class="card card-accent">
+          <div class="card-title card-title-primary">🌍 خوارزمية هافرسين الكروية (Haversine)</div>
+          <ul class="bullet-list">
+            <li class="bullet-item"><strong>لماذا هافرسين؟</strong> المسافة الإقليدية تفترض تسطح الأرض وتولد أخطاء فادحة، بينما هافرسين تحسب البعد على سطح كروي مع اعتبار نصف قطر الأرض (R = 6371 km).</li>
+            <li class="bullet-item"><strong>ترتيب النتائج:</strong> حساب المسافة بالكيلومتر وترتيب الصيدليات من الأقرب فورياً للمريض.</li>
+            <li class="bullet-item"><strong>استقلالية تامة:</strong> حساب رياضي داخلي دون تكلفة أو مفاتيح API مدفوعة.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6 -->
+    <div class="slide" data-speaker="المتحدث 2: دقيقتان">
+      <div class="slide-header">
+        <div>
+          <div class="slide-category">المحور الخامس: عميل الهاتف المحمول وتجربة المستخدم</div>
+          <h2 class="slide-title">5. تطبيق الهاتف المحمول (Flutter & Clean Architecture)</h2>
+        </div>
+        <div class="slide-speaker">المتحدث 2 (05:30 - 07:30)</div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title card-title-primary">🏗️ هيكلية Clean Architecture في Flutter</div>
+          <ul class="bullet-list">
+            <li class="bullet-item"><strong>طبقة core:</strong> إدارة خدمة الشبكة ApiService بنمط Singleton، وخدمة الموقع، والثيمات.</li>
+            <li class="bullet-item"><strong>طبقة data:</strong> نماذج البيانات المحكمة وتحويل الـ JSON الآمن.</li>
+            <li class="bullet-item"><strong>طبقة presentation:</strong> الشاشات والويدجتس الموجهة للمريض.</li>
+            <li class="bullet-item"><strong>خريطة المسار الذكية:</strong> تعتمد على مربعات CartoDB / OSM المجانية.</li>
+          </ul>
+        </div>
+        <div class="card card-accent">
+          <div class="card-title card-title-primary">🎫 تذكرة الحجز والمزامنة اللحظية الحية</div>
+          <ul class="bullet-list">
+            <li class="bullet-item"><strong>مؤقت عد تنازلي حي (30 دقيقة):</strong> يحسب الثواني التنازلية المتبقية.</li>
+            <li class="bullet-item"><strong>رمز الحجز و QR Code:</strong> لعرضه على الصيدلي وتأكيد الاستلام بماسح الباركود.</li>
+            <li class="bullet-item"><strong>المزامنة التلقائية اللحظية:</strong> فور ضغط الصيدلي "تم التسليم" بالويب، تلتقط التذكرة الحالة فورياً وتتحول للشارة الخضراء المكتملة.</li>
+            <li class="bullet-item"><strong>مرونة الشبكة (Resilience):</strong> عمل التطبيق دون انهيار حتى عند بطء الشبكة.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7 -->
+    <div class="slide" data-speaker="المتحدث 3: دقيقة ونصف">
+      <div class="slide-header">
+        <div>
+          <div class="slide-category">المحور السادس: بوابة الصيدلية والتكامل المحاسبي</div>
+          <h2 class="slide-title">6. بوابة الصيدلية والربط المحاسبي (Pharmacy Portal & B2B)</h2>
+        </div>
+        <div class="slide-speaker">المتحدث 3 (07:30 - 09:00)</div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title card-title-primary">🖥️ بوابة الويب للصيدليات (Web Portal)</div>
+          <ul class="bullet-list">
+            <li class="bullet-item"><strong>لوحة تحكم خفيفة وسريعة:</strong> تفتح من أي جهاز أو متصفح كمبيوتر أو هاتف.</li>
+            <li class="bullet-item"><strong>إدارة المخزون اللحظي:</strong> تعديل الأسعار وتنبيهات المخزون الحرج.</li>
+            <li class="bullet-item"><strong>شاشة الحجوزات الواردة:</strong> مزامنة حية بتحديث تلقائي كل 5 ثوانٍ دون الحاجة لتحديث الصفحة يدوياً.</li>
+            <li class="bullet-item"><strong>تأكيد التسليم والمحاسبة:</strong> بضغطة زر واحدة لإغلاق الحجز وتحويله لمكتمل.</li>
+          </ul>
+        </div>
+        <div class="card card-accent">
+          <div class="card-title card-title-primary">🔌 بوابة الربط المحاسبي (B2B Partner API)</div>
+          <ul class="bullet-list">
+            <li class="bullet-item"><strong>التكامل مع الأنظمة القائمة:</strong> (يمن سوفت، الإبداع، المتكامل).</li>
+            <li class="bullet-item"><strong>مزامنة المخزون:</strong> واجهة POST /api/v1/partner/inventory/sync لتحديث آلاف الأصناف بطلب واحد.</li>
+            <li class="bullet-item"><strong>تحديث الكاشير:</strong> واجهة POST /api/v1/partner/inventory/update-item لتعديل كمية صنف فور بيعه محلياً.</li>
+            <li class="bullet-item"><strong>تأكيد الحجز بماسح الباركود:</strong> POST /api/v1/partner/reservations/{id}/fulfill.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 8 -->
+    <div class="slide" data-speaker="المتحدث 3: دقيقة واحدة">
+      <div class="slide-header">
+        <div>
+          <div class="slide-category">المحور السابع: ضمان الجودة وهندسة البرمجيات</div>
+          <h2 class="slide-title">7. ضمان الجودة وخطوط التكامل المستمر (QA & CI/CD)</h2>
+        </div>
+        <div class="slide-speaker">المتحدث 3 (09:00 - 10:00)</div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title card-title-primary">🔄 منهجية الحلقات المغلقة (Looping Engineering)</div>
+          <ul class="bullet-list">
+            <li class="bullet-item"><strong>دورة تطوير صارمة:</strong> تخطيط ➔ تنفيذ معياري ➔ اختبار آلي ➔ تدقيق ➔ توثيق فوري في CHANGELOG.md.</li>
+            <li class="bullet-item"><strong>فحص التنسيق والجودة التلقائي:</strong></li>
+            <li class="bullet-item" style="padding-right: 32px;">كود PHP خاضع لأداة <strong>Laravel Pint</strong> بنسبة توافق 100%.</li>
+            <li class="bullet-item" style="padding-right: 32px;">كود Dart خاضع لـ <strong>Flutter Analyze</strong> بصفر أخطاء وصفر تحذيرات.</li>
+            <li class="bullet-item"><strong>توثيق علمي شامل:</strong> وفق معايير APA 7th Edition.</li>
+          </ul>
+        </div>
+        <div class="card card-accent">
+          <div class="card-title card-title-primary">🚀 خطوط أنابيب GitHub Actions المؤتمتة</div>
+          <ul class="bullet-list">
+            <li class="bullet-item"><strong>12 اختبار تكاملي ووظيفي (Feature Tests):</strong> تغطي قفل التزامن، البحث الجغرافي، ومسارات الـ B2B، وعزل الحسابات.</li>
+            <li class="bullet-item"><strong>اختبارات Flutter:</strong> فحص نماذج البيانات وسير الواجهات بنجاح 100%.</li>
+            <li class="bullet-item"><strong>حماية فرع main:</strong> منع دمج أي كود لا يجتاز كافة الاختبارات بنجاح.</li>
+            <li class="bullet-item"><strong>نشر سحابي آلي:</strong> إلى السحابة الحية على منصة Render.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 9 -->
+    <div class="slide" data-speaker="كامل الفريق: دقيقتان">
+      <div class="slide-header">
+        <div>
+          <div class="slide-category">المحور الثامن: العرض العملي الحي أمام اللجنة</div>
+          <h2 class="slide-title">8. سيناريو العرض العملي الحي (Interactive Live Demo)</h2>
+        </div>
+        <div class="slide-speaker">كامل الفريق (10:00 - 12:00)</div>
+      </div>
+      <table class="demo-table">
+        <thead>
+          <tr>
+            <th style="width: 8%;">الخطوة</th>
+            <th style="width: 24%;">البيئة والمنصة</th>
+            <th style="width: 38%;">الإجراء المشاهد أمام اللجنة</th>
+            <th style="width: 30%;">النتيجة الهندسية والتقنية</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1</strong></td>
+            <td>بوابة الويب (المتصفح)</td>
+            <td>الصيدلي يسجل دخوله ويعدل مخزون <strong>Norvasc</strong> إلى 10 وسعره 3800 ريال.</td>
+            <td>حفظ فوري بقاعدة البيانات مع رسالة نجاح.</td>
+          </tr>
+          <tr>
+            <td><strong>2</strong></td>
+            <td>تطبيق الهاتف (Flutter)</td>
+            <td>المريض يبحث عن دواء "Norvasc" في التطبيق.</td>
+            <td>ظهور صيدلية الأمل بالسعر الجديد والمسافة بالأمتار.</td>
+          </tr>
+          <tr>
+            <td><strong>3</strong></td>
+            <td>تطبيق الهاتف</td>
+            <td>المريض يحدد حجز عبوة واحدة ويؤكد الحجز فورياً.</td>
+            <td>إصدار تذكرة بمؤقت 30 دقيقة وكود حجز فريد.</td>
+          </tr>
+          <tr>
+            <td><strong>4</strong></td>
+            <td>بوابة الويب</td>
+            <td>مراقبة شاشة الحجوزات الواردة بالويب.</td>
+            <td>ظهور الحجز آلياً وخصم المخزون من 10 إلى 9 علب.</td>
+          </tr>
+          <tr>
+            <td><strong>5</strong></td>
+            <td>بوابة الويب</td>
+            <td>الصيدلي يضغط زر "تم التسليم والمحاسبة".</td>
+            <td>تحديث حالة الحجز فوراً إلى completed.</td>
+          </tr>
+          <tr>
+            <td><strong>6</strong></td>
+            <td>تطبيق الهاتف</td>
+            <td>تذكرة المريض المفتوحة تلتقط التأكيد بالخلفية آلياً.</td>
+            <td>توقف المؤقت وظهور شارة النجاح الخضراء فوراً.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SLIDE 10 -->
+    <div class="slide" data-speaker="كامل الفريق: دقيقة واحدة">
+      <div class="slide-header">
+        <div>
+          <div class="slide-category">المحور التاسع: الخاتمة وأسئلة المناقشة</div>
+          <h2 class="slide-title">9. الخاتمة وبطاقة إجابات البرق الحاسمة (Pocket QA)</h2>
+        </div>
+        <div class="slide-speaker">كامل الفريق (12:00 - 13:00)</div>
+      </div>
+      <div class="grid-2">
+        <div class="card card-accent">
+          <div class="card-title card-title-primary">🏆 أهم المنجزات والتطلعات المستقبلية</div>
+          <ul class="bullet-list">
+            <li class="bullet-item"><strong>منظومة متكاملة 3-Tier:</strong> جاهزة للتشغيل التجاري والربط الطبي.</li>
+            <li class="bullet-item"><strong>استقلالية تامة:</strong> الاعتماد على تقنيات مجانية 100% للخرائط والبيانات.</li>
+            <li class="bullet-item"><strong>آفاق التطوير القادمة:</strong></li>
+            <li class="bullet-item" style="padding-right: 32px;">دمج الدفع بالمحافظ الرقمية اليمنية (كاش، جوالي، فلوسك).</li>
+            <li class="bullet-item" style="padding-right: 32px;">إدارة أساطيل توصيل الأدوية للمنازل.</li>
+            <li class="bullet-item" style="padding-right: 32px;">التنبؤ بنفاد الأدوية الحرجة بالذكاء الاصطناعي.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title card-title-primary">⚡ إجابات البرق على أسئلة اللجنة المحرجة</div>
+          <ul class="bullet-list">
+            <li class="bullet-item"><strong>س: أين منعتم الـ Race Condition؟</strong><br>ج: بدالة <code>createReservation</code> عبر <code>lockForUpdate()</code> داخل <code>DB::transaction()</code>.</li>
+            <li class="bullet-item"><strong>س: أين خوارزمية المسافة الكروية؟</strong><br>ج: بدالة <code>calculateHaversineDistance()</code> بنصف قطر الأرض 6371 كم.</li>
+            <li class="bullet-item"><strong>س: كيف يعمل الأمان بدون Session بالموبايل؟</strong><br>ج: عبر <code>Bearer Token</code> مشفر من حزمة Laravel Sanctum.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer Navigation -->
+  <footer>
+    <div class="slide-counter" id="slideCounter">الشريحة 1 من 10</div>
+    <div class="nav-buttons">
+      <button class="btn" id="btnPrev" onclick="prevSlide()">السابق ➔</button>
+      <button class="btn btn-primary" id="btnNext" onclick="nextSlide()">⬅ التالي</button>
+    </div>
+  </footer>
+
+  <!-- Speaker Notes Drawer -->
+  <div class="speaker-drawer" id="speakerDrawer">
+    <div class="speaker-header">
+      <div class="speaker-title" id="drawerTitle">🎙️ نص الإلقاء للمتحدث على هذه الشريحة</div>
+      <button class="btn" onclick="toggleSpeakerNotes()">إغلاق ✖</button>
+    </div>
+    <div class="speaker-text" id="drawerText"></div>
+  </div>
+
+  <script>
+    const speakerScripts = [
+      "بسم الله الرحمن الرحيم، والصلاة والسلام على رسول الله. أساتذتنا الأفاضل أعضاء لجنة التحكيم الموقرة، يسعدنا أن نقدّم لكم اليوم مشروع تخرجنا في مقرر أنظمة الخادم والعميل بعنوان: PharmaConnect. جاء هذا المشروع ليجسد تطبيقاً عملياً صارماً لأحدث المعايير البرمجية والهندسية في بيئات الحوسبة الموزعة، حيث دمجنا بين قوة إطار عمل Laravel كخادم مركزي متين وخفيف، ومرونة إطار عمل Flutter كعميل هاتف لحظي للمرضى، مع توفير بوابة ويب متكاملة للصيدليات.",
+      "حضرات الأساتذة، المشكلة التي تصدينا لها ليست مجرد تطبيق لعرض المنتجات، بل هي معضلة إنسانية وهندسية في آن واحد. المريض في بلادنا عندما يحتاج دواءً حرجاً يضطر للطواف على عشرات الصيدليات سيراً أو عبر المواصلات هادراً ما بين 45 إلى 120 دقيقة. وحتى في حال الاتصال هاتفياً، قد يصل ليجد أن الدواء بيع قبل لحظات! لذا كان دافعنا بناء بنية خادم وعميل ذكية تتيح للمريض البحث بالاسم التجاري أو العلمي، ومعرفة أقرب صيدلية متوفر لديها الدواء، وحجزه لمدة 30 دقيقة مع قفل حقيقي للمخزون يمنع بيعه لأي شخص آخر حتى وصوله.",
+      "هنا يكمن جوهر مقررنا (خادم وعميل). لم نقم بربط العميل بقاعدة البيانات مباشرة كما في المعماريات الثنائية الساذجة (2-Tier) لأن ذلك يمثل انتحاراً أمنياً ويعطل قابلية التوسع. اعتمدنا معمارية 3-Tier Distributed بالكامل: فالعميل سواء كان تطبيق Flutter أو متصفح الويب يتواصل حصراً عبر طلبات Stateless RESTful API خفيفة بصيغة JSON. تتولى الطبقة الوسطى (Laravel Logic Tier) تطبيق كافة قواعد الأعمال: التحقق من التشفير بـ Sanctum، حساب المسافات، وتطبيق المعاملات الذرية، ثم التخاطب مع طبقة البيانات المنفصلة تماماً.",
+      "في هندسة قاعدة البيانات، حرصنا على تحقيق أعلى معايير الـ Normalization (3NF). لم نقم بتكرار بيانات الأدوية داخل كل صيدلية؛ بل أنشأنا سجلاً موحداً في جدول medicines، وجعلنا جدول pharmacy_medicines هو نقطة الوصل التي تحمل الكمية الحالية والسعر المحدد لكل صيدلية على حدة. كما صممنا جدول reservations ليعمل بنظام الحالات الخمس المغلقة: pending، confirmed، completed، cancelled، و expired.",
+      "هذه الشريحة تمثل الدقة العلمية للمشروع. واجهنا تحديين حاسمين: الأول: كيف نمنع مريضين من حجز آخر علبة دواء إذا ضغطا على الزر في نفس الجزء من الثانية؟ استخدمنا القفل التشاؤمي الصارم lockForUpdate() داخل معاملة ذرية DB::transaction(). محرك InnoDB يضع قفلاً حصرياً على الصف فور دخول الطلب الأول فيتم خصم العلبة، وحين يُفك القفل ويدخل الطلب الثاني يجد الرصيد صفر فيُرفض فورياً بأمان بنسبة خطأ 0%. الثاني: حساب المسافة الواقعية؛ طبقنا خوارزمية هافرسين الكروية بنصف قطر الأرض 6371 كم لترتيب الصيدليات من الأقرب فورياً دون تكاليف خارجية.",
+      "بصفتي مسؤول عميل الهاتف المحمول، بنينا التطبيق بإطار عمل Flutter بلغة Dart ليعمل بكفاءة عالية على منصات متعددة. صممنا هيكلية التطبيق وفق معمارية Clean Architecture؛ حيث عزلنا منطق الشبكة داخل ApiService بنمط Singleton، مما يتيح إدارة الجلسات واحتجاز التوكنات وتوفير ميزة المرونة (Resilience) والعمل حتى في ظروف ضعف الاتصال. عندما يختار المريض الدواء تنبثق تذكرة رقمية تحوي كود الحجز السريع ومؤقت عد تنازلي حي يبدأ من 30 دقيقة، يلتقط التأكيد اللحظي من الصيدلي ويتحول فوراً لشارة النجاح الخضراء.",
+      "لتطبيق مفهوم الشمولية في بيئات الأعمال، قمنا بإنشاء قناتين رئيسيتين لإدارة المخزون: القناة الأولى: بوابة ويب خفيفة وسريعة يستطيع الصيدلي فتحها من هاتفه أو كمبيوتر الصيدلية، يستعرض من خلالها الحجوزات الواردة لحظياً، مع مؤقت مزامنة حية يقوم بتحديث الجدول تلقائياً كل 5 ثوانٍ دون الحاجة للضغط على F5. القناة الثانية: بوابة B2B Integration API المخصصة لربط أنظمة الصيدليات المحاسبية القائمة (كيمن سوفت أو الإبداع)؛ حيث يرسل نظام الكاشير طلباً آلياً لتحديث الرصيد أو صرف الحجز بمجرد مسح الباركود.",
+      "في هذا المشروع، لم نترك شيئاً للصدفة أو التجربة اليدوية. طبقنا معايير الشركات العالمية عبر خط أنابيب CI/CD متكامل على GitHub Actions. عند كل تعديل للكود، تعمل سيرفرات GitHub تلقائياً لفحص التنسيق بـ Laravel Pint و Flutter Analyze، ثم تشغيل حزمة اختبارات برمجية مؤتمتة بنسبة نجاح 100%، للتأكد من أن قفل التزامن، وعزل بيانات المرضى، وحساب المسافات يعمل بدون أي خطأ. وفور اجتياز الفحص، يتم نشر التحديثات تلقائياً إلى الخادم السحابي الحي.",
+      "والآن سننتقل مع لجنتنا الموقرة إلى العرض العملي الحي المشترك. أمامكم على الشاشة اليمنى متصفح الصيدلية، وعلى الشاشة اليسرى هاتف العميل يعملان في بيئة متزامنة حية. الصيدلي يعدل سعر وكمية الدواء... فورا في تطبيق المريض يظهر التعديل دون أي تأخير. الآن يقوم المريض بالحجز... تخرج التذكرة ويبدأ مؤقت الـ 30 دقيقة، وبنفس الثانية يظهر الطلب في شاشة الصيدلي وينخفض المخزون المتاح. وأخيراً، يضغط الصيدلي 'تم التسليم والمحاسبة'، لتتحول شاشة هاتف المريض تلقائياً ولحظياً إلى شارة الاستلام الخضراء المكتملة.",
+      "في ختام عرضنا، نؤكد أن مشروع PharmaConnect يمثل رؤية هندسية ناضجة لكيفية توظيف تقنيات الخادم والعميل لخدمة القطاع الصحي والمجتمعي بكفاءة وموثوقية عالية. نشكر لأساتذتنا الكرام حسن استماعهم وتوجيهاتهم القيمة التي كانت السند في إنجاز هذا العمل بالصورة التي تليق بجامعتنا، ونحن الآن على أتم الاستعداد لسماع ملاحظاتكم والإجابة على كافة أسئلتكم البرمجية والمعمارية. والسلام عليكم ورحمة الله وبركاته."
+    ];
+
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const progressBar = document.getElementById('progressBar');
+    const slideCounter = document.getElementById('slideCounter');
+    const drawer = document.getElementById('speakerDrawer');
+    const drawerTitle = document.getElementById('drawerTitle');
+    const drawerText = document.getElementById('drawerText');
+
+    function showSlide(index) {
+      if (index < 0) index = 0;
+      if (index >= slides.length) index = slides.length - 1;
+
+      slides.forEach((s, idx) => {
+        s.classList.toggle('active', idx === index);
+      });
+
+      currentSlide = index;
+      progressBar.style.width = ((index + 1) / slides.length * 100) + '%';
+      slideCounter.innerText = `الشريحة ${index + 1} من ${slides.length}`;
+
+      const speakerMeta = slides[index].getAttribute('data-speaker') || 'نص الإلقاء';
+      drawerTitle.innerText = `🎙️ نص الإلقاء (${speakerMeta})`;
+      drawerText.innerText = speakerScripts[index] || '';
+
+      document.getElementById('btnPrev').disabled = (index === 0);
+      document.getElementById('btnNext').innerText = (index === slides.length - 1) ? 'إنهاء العرض 🏁' : '⬅ التالي';
+    }
+
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) {
+        showSlide(currentSlide + 1);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        showSlide(currentSlide - 1);
+      }
+    }
+
+    function toggleSpeakerNotes() {
+      drawer.classList.toggle('open');
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => alert(err.message));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === ' ' || e.key === 'PageDown' || e.key === 'n' || e.key === 'N') {
+        nextSlide();
+      } else if (e.key === 'ArrowRight' || e.key === 'PageUp' || e.key === 'p' || e.key === 'P' || e.key === 'Backspace') {
+        prevSlide();
+      } else if (e.key === 's' || e.key === 'S') {
+        toggleSpeakerNotes();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      } else if (e.key === 'Home') {
+        showSlide(0);
+      } else if (e.key === 'End') {
+        showSlide(slides.length - 1);
+      }
+    });
+
+    // Touch Swipe Support
+    let touchStartX = 0;
+    document.addEventListener('touchstart', e => {
+      touchStartX = e.changedTouches[0].screenX;
+    });
+    document.addEventListener('touchend', e => {
+      let touchEndX = e.changedTouches[0].screenX;
+      if (touchStartX - touchEndX > 50) nextSlide();
+      if (touchEndX - touchStartX > 50) prevSlide();
+    });
+
+    // Initialize first slide
+    showSlide(0);
+  </script>
+</body>
+</html>
