@@ -7,8 +7,8 @@ class AppConstants {
 
   // Base API Configuration
   // لتفعيل الاتصال بالخادم السحابي الحي على Render، اجعل هذه القيمة true
-  static const bool useCloudBackend = false;
-  static const String cloudBaseUrl = 'https://pharmaconnect-backend.onrender.com/api/v1';
+  static const bool useCloudBackend = true;
+  static const String cloudBaseUrl = 'https://pharmaconnect-dso7.onrender.com/api/v1';
 
   static String get baseUrl {
     if (useCloudBackend) {

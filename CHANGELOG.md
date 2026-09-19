@@ -2,6 +2,16 @@
 
 جميع التعديلات والخطوات البرمجية والتوثيقية لمشروع الصيدلية (خادم وعميل).
 
+## [2.19.0] - 2026-09-19
+### أضيف وتوثق (Added & Documented)
+- **بناء وتصدير حزمة الأندرويد النهائية بنجاح (`PharmaConnect.apk`):**
+  - تصدير حزمة الإنتاج `app-release.apk` بحجم **52.1 ميجابايت** ونسخها مباشرة في جذر المشروع باسم [`PharmaConnect.apk`](file:///d:/IT%20FILES/level%204/خادم%20وعميل/مشروع%20الصيدلية/PharmaConnect.apk).
+  - ضبط أذونات الإنترنت والموقع الجغرافي (`INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `usesCleartextTraffic=true`) في `AndroidManifest.xml`.
+  - تفعيل الاتصال المباشر التلقائي مع السيرفر السحابي الحي على منصة Render:
+    `https://pharmaconnect-dso7.onrender.com/api/v1` عبر `useCloudBackend = true`.
+  - معالجة مشكلة المسارات غير الإنجليزية على ويندوز عبر حيلة القرص الافتراضي النقي (`subst X:`) وضبط توافق منصة `Android SDK 35`.
+  - إضافة مستودع المرايا السريع `maven.aliyun.com/repository/google` لتجاوز بطء وانقطاع شبكات التحميل العالمية.
+
 ## [2.18.0] - 2026-09-19
 ### أضيف وهُيّئ (Added & Configured)
 - **تهيئة النشر السحابي المجاني الكامل على منصة Render.com (`render.yaml` & `Dockerfile`):**

@@ -41,8 +41,9 @@ $RECYCLE.BIN/
 /frontend/.pub-cache/
 /frontend/.pub/
 /frontend/build/
-/frontend/ios/Pods/
 /frontend/.fvm/
+*.apk
+/PharmaConnect.apk
 
 # Node / Web Frontend
 node_modules/
