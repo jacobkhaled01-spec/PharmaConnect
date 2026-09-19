@@ -2,6 +2,12 @@
 
 جميع التعديلات والخطوات البرمجية والتوثيقية لمشروع الصيدلية (خادم وعميل).
 
+## [2.20.0] - 2026-09-19
+### أُصلح وحُسّن (Fixed & Enhanced)
+- **معالجة تحذير أمان النماذج في المتصفح ("The information you're about to submit is not secure"):**
+  - تفعيل الثقة التامة في البروكسي العكسي لمنصة Render السحابية عبر `$middleware->trustProxies(at: '*')` في `bootstrap/app.php`.
+  - تطبيق `URL::forceScheme('https')` في `AppServiceProvider.php` لضمان توليد كافة روابط النماذج وإعادة التوجيه (Redirects / Form Actions) ببروتوكول `https://` المشفر حصرياً عند العمل خلف البروكسي السحابي.
+
 ## [2.19.0] - 2026-09-19
 ### أضيف وتوثق (Added & Documented)
 - **بناء وتصدير حزمة الأندرويد النهائية بنجاح (`PharmaConnect.apk`):**
